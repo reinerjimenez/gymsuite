@@ -10,13 +10,13 @@ verificar_rol(['socio']);
 $socio_id    = $_SESSION['socio_id'] ?? 0;
 $gimnasio_id = $_SESSION['gimnasio_id'] ?? 0;
 
-if (!$socio_id || !$gimnasio_id) { header("Location: /gymsuite/index.php"); exit; }
+if (!$socio_id || !$gimnasio_id) { header("Location: " . BASE_URL . "index.php"); exit; }
 
 // Datos del socio
 $stmt = $pdo->prepare("SELECT * FROM socios WHERE id = ? AND gimnasio_id = ?");
 $stmt->execute([$socio_id, $gimnasio_id]);
 $socio = $stmt->fetch();
-if (!$socio) { header("Location: /gymsuite/logout.php"); exit; }
+if (!$socio) { header("Location: " . BASE_URL . "logout.php"); exit; }
 
 // Membresía activa (última)
 $stmtM = $pdo->prepare("
@@ -168,7 +168,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <p style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?= h($rutina['rutina_nombre']) ?></p>
             <p style="font-size:0.75rem;color:var(--color-text-muted);"><?= h($objetivos_labels[$rutina['objetivo']] ?? 'General') ?></p>
         </div>
-        <a href="/gymsuite/modules/rutinas/imprimir.php?id=<?= $rutina['rutina_id'] ?>&socio_id=<?= $socio_id ?>" target="_blank" class="btn btn-secondary" style="font-size:0.8rem;min-height:38px;padding:0.5rem 0.875rem;white-space:nowrap;flex-shrink:0;">
+        <a href="<?= BASE_URL ?>modules/rutinas/imprimir.php?id=<?= $rutina['rutina_id'] ?>&socio_id=<?= $socio_id ?>" target="_blank" class="btn btn-secondary" style="font-size:0.8rem;min-height:38px;padding:0.5rem 0.875rem;white-space:nowrap;flex-shrink:0;">
             Ver Rutina
         </a>
     </div>
@@ -201,10 +201,16 @@ include __DIR__ . '/../../includes/sidebar.php';
         <p style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:1rem;">Muéstralo en recepción para registrar tu entrada rápidamente.</p>
         <div id="qr_socio"></div>
         <p style="font-size:0.7rem;color:var(--color-text-muted);margin-top:0.75rem;">Token: <?= h(substr($socio['token_qr'], 0, 8)) ?>...</p>
-        <button onclick="window.print()" class="btn btn-secondary" style="margin-top:1rem;font-size:0.875rem;min-height:42px;">
-            <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            Imprimir QR
-        </button>
+        <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:center;flex-wrap:wrap;">
+            <button onclick="window.print()" class="btn btn-secondary" style="font-size:0.875rem;min-height:42px;">
+                <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Imprimir QR
+            </button>
+            <a href="cambiar_clave.php" class="btn btn-secondary" style="font-size:0.875rem;min-height:42px;text-decoration:none;">
+                <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                Cambiar mi PIN
+            </a>
+        </div>
     </div>
 </div>
 

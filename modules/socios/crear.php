@@ -20,24 +20,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telefono = trim($_POST['telefono'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $fecha_nacimiento = $_POST['fecha_nacimiento'] ?: null; // si vacío que sea nulo
+    $fecha_inscripcion = $_POST['fecha_inscripcion'] ?: date('Y-m-d');
     $pin_manual = trim($_POST['pin'] ?? '');
 
     // Validación básica
-    if (empty($nombre) || empty($apellido) || empty($dni) || empty($pin_manual)) {
-        mensaje_flash('error', 'Nombre, Apellido, DNI y PIN son obligatorios.');
-    } elseif (!preg_match('/^[0-9]{4}$/', $pin_manual)) {
-        mensaje_flash('error', 'El PIN de acceso debe ser un número de exactamente 4 dígitos.');
+    if (empty($nombre) || empty($apellido) || empty($telefono)) {
+        mensaje_flash('error', 'Nombres, Apellidos y Teléfono son obligatorios.');
     } else {
-        // Verificar duplicados
-        $stmt = $pdo->prepare("SELECT id FROM socios WHERE dni = ? AND gimnasio_id = ?");
-        $stmt->execute([$dni, $gimnasio_id]);
-        if ($stmt->fetch()) {
-            mensaje_flash('error', "El DNI $dni ya se encuentra registrado.");
-        } else {
-            // Utilizar PIN ingresado manualmente
-            $clave_acceso = password_hash($pin_manual, PASSWORD_DEFAULT);
+        $errores = false;
+        
+        if ($pin_manual !== '' && !preg_match('/^[0-9]{4}$/', $pin_manual)) {
+            mensaje_flash('error', 'El PIN de acceso debe ser un número de exactamente 4 dígitos.');
+            $errores = true;
+        }
+
+        // Verificar duplicados solo si ingresó DNI
+        if (!$errores && $dni !== '') {
+            $stmt = $pdo->prepare("SELECT id FROM socios WHERE dni = ? AND gimnasio_id = ?");
+            $stmt->execute([$dni, $gimnasio_id]);
+            if ($stmt->fetch()) {
+                mensaje_flash('error', "El Documento $dni ya se encuentra registrado.");
+                $errores = true;
+            }
+        }
+
+        if (!$errores) {
+            // Utilizar PIN ingresado manualmente o dejar null
+            $clave_acceso = $pin_manual !== '' ? password_hash($pin_manual, PASSWORD_DEFAULT) : null;
             $token_qr = generar_token_qr();
-            $fecha_inscripcion = date('Y-m-d');
             
             $pdo->beginTransaction();
             try {
@@ -56,15 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmtPlan->execute([$plan_id, $gimnasio_id]);
                     $plan = $stmtPlan->fetch();
                     if ($plan) {
-                        $f_inicio = date('Y-m-d');
-                        $f_fin = date('Y-m-d', strtotime("+$plan[duracion_dias] days"));
+                        $f_inicio = $fecha_inscripcion;
+                        $f_fin = date('Y-m-d', strtotime($f_inicio . " +$plan[duracion_dias] days"));
                         
                         $stmtMem = $pdo->prepare("INSERT INTO membresias (socio_id, gimnasio_id, plan_id, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, ?, ?, 'activa')");
                         $stmtMem->execute([$socio_id, $gimnasio_id, $plan_id, $f_inicio, $f_fin]);
                         $membresia_id = $pdo->lastInsertId();
 
                         $stmtPago = $pdo->prepare("INSERT INTO pagos (socio_id, gimnasio_id, membresia_id, monto, metodo, fecha, notas, registrado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmtPago->execute([$socio_id, $gimnasio_id, $membresia_id, $plan['precio'], $metodo_pago, date('Y-m-d'), 'Inscripción y primer plan.', $_SESSION['usuario_id']]);
+                        $stmtPago->execute([$socio_id, $gimnasio_id, $membresia_id, $plan['precio'], $metodo_pago, $fecha_inscripcion, 'Inscripción y primer plan.', $_SESSION['usuario_id']]);
                     }
                 }
                 
@@ -115,16 +125,16 @@ include __DIR__ . '/../../includes/sidebar.php';
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label for="dni" class="form-label">DNI / Documento *</label>
-                    <input type="text" id="dni" name="dni" class="form-control" required>
+                    <label for="dni" class="form-label">DNI / Documento</label>
+                    <input type="text" id="dni" name="dni" class="form-control">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label for="telefono" class="form-label">Teléfono (WhatsApp)</label>
-                    <input type="text" id="telefono" name="telefono" class="form-control">
+                    <label for="telefono" class="form-label">Teléfono (WhatsApp) *</label>
+                    <input type="text" id="telefono" name="telefono" class="form-control" required>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="email" class="form-label">Correo Electrónico</label>
                     <input type="email" id="email" name="email" class="form-control">
@@ -132,6 +142,15 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
                     <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-control">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Se ha movido a una nueva fila para destacar -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="fecha_inscripcion" class="form-label" style="color:var(--color-primary);">Fecha de Inscripción / Inicio Plan *</label>
+                    <input type="date" id="fecha_inscripcion" name="fecha_inscripcion" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    <small style="color:var(--color-text-muted);display:block;margin-top:0.25rem;">Es el día efectivo de inicio si contrata un plan ahora.</small>
                 </div>
             </div>
 
@@ -267,12 +286,12 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
                 
                 <div class="pin-text-block" style="position: relative; z-index: 10;">
-                    <label for="pin" class="pin-title-text">PIN de Seguridad *</label>
-                    <p class="pin-desc-text">El socio creará una clave de <strong style="color: #e5e7eb;">4 dígitos</strong> usando el teclado numérico. Esta clave cifrará su acceso.</p>
+                    <label for="pin" class="pin-title-text">PIN de Seguridad (Opcional)</label>
+                    <p class="pin-desc-text">El socio creará una clave de <strong style="color: #e5e7eb;">4 dígitos</strong> usando el teclado numérico. Si la omites, igual se generará el Acceso QR.</p>
                 </div>
 
                 <div class="pin-input-container" style="position: relative; z-index: 10;">
-                    <input type="password" id="pin" name="pin" class="pin-input-premium" maxlength="4" pattern="\d{4}" required placeholder="••••">
+                    <input type="password" id="pin" name="pin" class="pin-input-premium" maxlength="4" pattern="\d{4}" placeholder="••••">
                 </div>
             </div>
 

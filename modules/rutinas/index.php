@@ -207,7 +207,7 @@ $iconos_genero = [
         <svg style="width:1.25rem;height:1.25rem;color:var(--color-primary);flex-shrink:0;margin-top:0.1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <div>
             <p style="font-weight:700;color:var(--color-primary);margin-bottom:0.2rem;font-size:0.9rem;">¿Cómo asignar una rutina a un socio?</p>
-            <p style="font-size:0.8rem;color:var(--color-text-muted);">Ve al perfil del socio desde <a href="/gymsuite/modules/socios/index.php" style="color:var(--color-primary);">Socios</a> y busca la sección "Rutina Asignada". Desde ahí podrás asignar cualquiera de estas plantillas y enviarla por WhatsApp.</p>
+            <p style="font-size:0.8rem;color:var(--color-text-muted);">Ve al perfil del socio desde <a href="<?= BASE_URL ?>modules/socios/index.php" style="color:var(--color-primary);">Socios</a> y busca la sección "Rutina Asignada". Desde ahí podrás asignar cualquiera de estas plantillas y enviarla por WhatsApp.</p>
         </div>
     </div>
     <?php endif; ?>

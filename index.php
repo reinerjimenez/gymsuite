@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/functions.php';
 
 // Si ya está logueado, redirigir
 if (isset($_SESSION['usuario_id'])) {
-    header("Location: /gymsuite/modules/dashboard/index.php");
+    header("Location: " . BASE_URL . "modules/dashboard/index.php");
     exit;
 }
 
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['nombre']      = $socio['nombre'];
             $_SESSION['apellido']    = $socio['apellido'];
             $_SESSION['rol']         = 'socio';
-            header("Location: /gymsuite/modules/socio/dashboard.php");
+            header("Location: " . BASE_URL . "modules/socio/dashboard.php");
             exit;
         }
         // Si no encontró socio, caerá al mensaje de error abajo
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['nombre']      = $user['nombre'];
             $_SESSION['apellido']    = $user['apellido'];
             $_SESSION['rol']         = $user['rol'];
-            header("Location: /gymsuite/modules/dashboard/index.php");
+            header("Location: " . BASE_URL . "modules/dashboard/index.php");
             exit;
         } else {
             mensaje_flash('error', 'Usuario o contraseña incorrectos.');
@@ -70,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymSuite | Autenticación</title>
-    <link rel="stylesheet" href="/gymsuite/assets/css/style.css">
-    <link rel="stylesheet" href="/gymsuite/assets/css/components.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/components.css">
     <script src="https://unpkg.com/@heroicons/v2/24/outline/index.js"></script>
     <style>
         .login-wrapper {
@@ -136,6 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<script src="/gymsuite/assets/js/main.js"></script>
+<script src="<?= BASE_URL ?>assets/js/main.js"></script>
 </body>
 </html>

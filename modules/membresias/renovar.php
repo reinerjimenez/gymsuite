@@ -9,13 +9,13 @@ verificar_rol(['admin', 'recepcionista']);
 $gimnasio_id = get_gimnasio_id();
 $socio_id    = (int)($_GET['socio_id'] ?? 0);
 
-if (!$socio_id) { header("Location: /gymsuite/modules/accesos/index.php"); exit; }
+if (!$socio_id) { header("Location: " . BASE_URL . "modules/accesos/index.php"); exit; }
 
 // Cargar socio
 $stmt = $pdo->prepare("SELECT id, nombre, apellido, dni, foto FROM socios WHERE id = ? AND gimnasio_id = ?");
 $stmt->execute([$socio_id, $gimnasio_id]);
 $socio = $stmt->fetch();
-if (!$socio) { mensaje_flash('error', 'Socio no encontrado.'); header("Location: /gymsuite/modules/accesos/index.php"); exit; }
+if (!$socio) { mensaje_flash('error', 'Socio no encontrado.'); header("Location: " . BASE_URL . "modules/accesos/index.php"); exit; }
 
 // Membresía más reciente
 $stmtM = $pdo->prepare("
@@ -61,7 +61,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 <div style="max-width: 560px; margin: 0 auto;">
     <!-- Header -->
     <div style="margin-bottom: 1.75rem;">
-        <a href="/gymsuite/modules/accesos/index.php" style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.5rem;text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color=''">
+        <a href="<?= BASE_URL ?>modules/accesos/index.php" style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.5rem;text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color=''">
             <svg style="width:0.9rem;height:0.9rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             Volver a Accesos
         </a>
@@ -74,7 +74,7 @@ include __DIR__ . '/../../includes/sidebar.php';
     <!-- Card del socio -->
     <div class="card" style="margin-bottom: 1.25rem; display:flex; align-items:center; gap:1rem;">
         <?php if ($socio['foto']): ?>
-        <img src="/gymsuite/uploads/fotos/<?= h($socio['foto']) ?>" alt="" style="width:3.5rem;height:3.5rem;border-radius:50%;object-fit:cover;border:2px solid #333;flex-shrink:0;">
+        <img src="<?= BASE_URL ?>uploads/fotos/<?= h($socio['foto']) ?>" alt="" style="width:3.5rem;height:3.5rem;border-radius:50%;object-fit:cover;border:2px solid #333;flex-shrink:0;">
         <?php else: ?>
         <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:var(--color-surface-hover);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--color-text-muted);flex-shrink:0;font-family:var(--font-heading);">
             <?= strtoupper(substr($socio['nombre'], 0, 1)) ?>
@@ -99,7 +99,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <div class="card" style="margin-bottom: 1.25rem;">
             <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">Elige un Plan</h3>
             <?php if (empty($planes)): ?>
-            <p style="color:var(--color-text-muted);font-size:0.875rem;">No hay planes disponibles. <a href="/gymsuite/modules/planes/index.php">Crear planes</a></p>
+            <p style="color:var(--color-text-muted);font-size:0.875rem;">No hay planes disponibles. <a href="<?= BASE_URL ?>modules/planes/index.php">Crear planes</a></p>
             <?php else: ?>
             <div style="display:flex;flex-direction:column;gap:0.6rem;" id="planesContainer">
                 <?php foreach ($planes as $i => $p): ?>

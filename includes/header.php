@@ -22,8 +22,8 @@ if (isset($_SESSION['gimnasio_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GymSuite</title>
-    <link rel="stylesheet" href="/gymsuite/assets/css/style.css">
-    <link rel="stylesheet" href="/gymsuite/assets/css/components.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/components.css">
     <!-- Heroicons Script (CDN) -->
     <script src="https://unpkg.com/@heroicons/v2/24/outline/index.js"></script>
     <style>

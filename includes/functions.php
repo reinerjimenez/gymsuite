@@ -9,7 +9,7 @@ session_start();
 function verificar_sesion() {
     // Acepta tanto usuarios del sistema como socios
     if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['socio_id'])) {
-        header("Location: /gymsuite/index.php");
+        header("Location: " . BASE_URL . "index.php");
         exit;
     }
     // Si es socio que intenta acceder a páginas no propias, redirigir
@@ -17,7 +17,7 @@ function verificar_sesion() {
         // Los socios solo pueden estar en módulos /socio/ o /rutinas/imprimir
         $uri = $_SERVER['REQUEST_URI'] ?? '';
         if (strpos($uri, '/modules/socio/') === false && strpos($uri, '/rutinas/imprimir') === false) {
-            header("Location: /gymsuite/modules/socio/dashboard.php");
+            header("Location: " . BASE_URL . "modules/socio/dashboard.php");
             exit;
         }
     }
@@ -31,7 +31,7 @@ function verificar_sesion() {
 function verificar_rol($roles) {
     if (!isset($_SESSION['rol']) || !in_array($_SESSION['rol'], $roles)) {
         // Si no tiene acceso, redirigir al dashboard general (dashboard/index.php ruteará correcto)
-        header("Location: /gymsuite/modules/dashboard/index.php");
+        header("Location: " . BASE_URL . "modules/dashboard/index.php");
         exit;
     }
 }

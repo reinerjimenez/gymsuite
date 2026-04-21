@@ -255,7 +255,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         instruccion.textContent = 'Validando código...';
         scanFrame.style.display = 'none';
 
-        fetch('/gymsuite/ajax/validar_qr.php', {
+        fetch(BASE_URL . 'ajax/validar_qr.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `token=${encodeURIComponent(token)}`
@@ -269,7 +269,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             // Registrar acceso automáticamente si membresía activa
             const esActiva = data.estado === 'activa' || data.estado === 'por_vencer';
             if (esActiva) {
-                return fetch('/gymsuite/ajax/registrar_acceso.php', {
+                return fetch(BASE_URL . 'ajax/registrar_acceso.php', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `socio_id=${data.id}&metodo=qr`
@@ -315,7 +315,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
     function mostrarVencido(data) {
         const avatarHTML = data.foto
-            ? `<img src="/gymsuite/uploads/fotos/${data.foto}" class="socio-avatar" alt="${data.nombre}">`
+            ? `<img src="<?= BASE_URL ?>uploads/fotos/${data.foto}" class="socio-avatar" alt="${data.nombre}">`
             : `<div class="socio-avatar-placeholder">${(data.nombre||'?').charAt(0).toUpperCase()}</div>`;
 
         document.getElementById('resultadoQR').innerHTML = `
@@ -329,7 +329,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
             <div style="text-align:center;background:rgba(239,68,68,0.1);border-radius:0.5rem;padding:0.75rem;">
                 <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Membresía Vencida</p>
-                <a href="/gymsuite/modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.5rem;font-size:0.875rem;min-height:40px;padding:0.5rem 1rem;display:inline-flex;">Renovar Membresía</a>
+                <a href="<?= BASE_URL ?>modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.5rem;font-size:0.875rem;min-height:40px;padding:0.5rem 1rem;display:inline-flex;">Renovar Membresía</a>
             </div>
         </div>`;
         instruccion.textContent = 'Membresía vencida';

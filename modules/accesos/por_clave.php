@@ -315,7 +315,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         if (pin.length < 4 || lockoutActive) return;
         document.getElementById('enterBtn').disabled = true;
 
-        fetch('/gymsuite/ajax/validar_clave.php', {
+        fetch(BASE_URL . 'ajax/validar_clave.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `pin=${encodeURIComponent(pin)}`
@@ -344,7 +344,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             const estadoClases = { activa:'estado-activa', por_vencer:'estado-por_vencer', vencida:'estado-vencida', sin_membresia:'estado-error' };
 
             const avatarHTML = data.foto
-                ? `<img src="/gymsuite/uploads/fotos/${data.foto}" class="socio-avatar" alt="${data.nombre}">`
+                ? `<img src="<?= BASE_URL ?>uploads/fotos/${data.foto}" class="socio-avatar" alt="${data.nombre}">`
                 : `<div class="socio-avatar-placeholder">${(data.nombre||'?').charAt(0).toUpperCase()}</div>`;
 
             document.getElementById('resultadoPin').innerHTML = `
@@ -364,7 +364,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </button>` : `
                 <div style="text-align:center;padding:0.75rem;background:rgba(239,68,68,0.1);border-radius:0.5rem;">
                     <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Membresía Vencida</p>
-                    <a href="/gymsuite/modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.5rem;font-size:0.875rem;min-height:40px;padding:0.5rem 1rem;display:inline-flex;">Renovar</a>
+                    <a href="<?= BASE_URL ?>modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.5rem;font-size:0.875rem;min-height:40px;padding:0.5rem 1rem;display:inline-flex;">Renovar</a>
                 </div>`}
             </div>`;
 
@@ -378,7 +378,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
     window.registrarEntrada = function() {
         if (!socioActual) return;
-        fetch('/gymsuite/ajax/registrar_acceso.php', {
+        fetch(BASE_URL . 'ajax/registrar_acceso.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `socio_id=${socioActual.id}&metodo=clave`

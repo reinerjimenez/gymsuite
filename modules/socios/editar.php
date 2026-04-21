@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $fecha_nacimiento = $_POST['fecha_nacimiento'] ?: null;
 
-    if (empty($nombre) || empty($apellido) || empty($dni)) {
-        mensaje_flash('error', 'Nombre, Apellido y DNI son obligatorios.');
+    if (empty($nombre) || empty($apellido) || empty($telefono)) {
+        mensaje_flash('error', 'Nombres, Apellidos y Teléfono son obligatorios.');
     } else {
         $stmt = $pdo->prepare("
             UPDATE socios 
@@ -103,11 +103,11 @@ include __DIR__ . '/../../includes/sidebar.php';
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">DNI</label>
-                    <input type="text" name="dni" value="<?= h($socio['dni']) ?>" class="form-control" required>
+                    <input type="text" name="dni" value="<?= h($socio['dni']) ?>" class="form-control">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Teléfono</label>
-                    <input type="text" name="telefono" value="<?= h($socio['telefono']) ?>" class="form-control">
+                    <label class="form-label">Teléfono (WhatsApp) *</label>
+                    <input type="text" name="telefono" value="<?= h($socio['telefono']) ?>" class="form-control" required>
                 </div>
             </div>
 

@@ -170,7 +170,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <p class="text-muted">Busca al socio por su número de DNI</p>
         </div>
         <?php if($_SESSION['rol'] === 'admin'): ?>
-        <a href="/gymsuite/modules/configuracion/index.php" class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem; min-height: 38px;">
+        <a href="<?= BASE_URL ?>modules/configuracion/index.php" class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.5rem 1rem; min-height: 38px;">
             <svg style="width:1.1rem;height:1.1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             Configurar
         </a>
@@ -246,7 +246,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
     function getAvatarHTML(socio) {
         if (socio.foto) {
-            return `<img src="/gymsuite/uploads/fotos/${socio.foto}" alt="${socio.nombre}" class="socio-avatar">`;
+            return `<img src="<?= BASE_URL ?>uploads/fotos/${socio.foto}" alt="${socio.nombre}" class="socio-avatar">`;
         }
         const inicial = (socio.nombre || '?').charAt(0).toUpperCase();
         return `<div class="socio-avatar-placeholder">${inicial}</div>`;
@@ -309,7 +309,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:0.75rem; padding:1rem; text-align:center;">
                 <p style="color:#ef4444; font-weight:700; margin-bottom:0.25rem;">Acceso denegado</p>
                 <p style="color:var(--color-text-muted); font-size:0.875rem;">La membresía de este socio ha vencido.</p>
-                <a href="/gymsuite/modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.75rem; font-size:0.875rem; min-height:42px; padding:0.6rem 1.25rem; display:inline-flex;">
+                <a href="<?= BASE_URL ?>modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.75rem; font-size:0.875rem; min-height:42px; padding:0.6rem 1.25rem; display:inline-flex;">
                     Renovar Membresía
                 </a>
             </div>`}
@@ -323,7 +323,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             <p style="font-size:1.1rem; font-weight:600; margin-bottom:0.25rem;">${msg || 'Socio no encontrado'}</p>
             <p style="font-size:0.875rem;">Verifica el número de DNI o regístralo como nuevo socio.</p>
-            <a href="/gymsuite/modules/socios/crear.php" class="btn btn-secondary" style="margin-top:1rem; display:inline-flex; font-size:0.875rem; min-height:40px; padding:0.5rem 1.1rem;">
+            <a href="<?= BASE_URL ?>modules/socios/crear.php" class="btn btn-secondary" style="margin-top:1rem; display:inline-flex; font-size:0.875rem; min-height:40px; padding:0.5rem 1.1rem;">
                 + Registrar nuevo socio
             </a>
         </div>`;
@@ -368,7 +368,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         btn.disabled = true;
         btn.innerHTML = `<span style="width:1.2rem;height:1.2rem;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;"></span> Registrando...`;
 
-        fetch('/gymsuite/ajax/registrar_acceso.php', {
+        fetch(BASE_URL . 'ajax/registrar_acceso.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `socio_id=${socioActual.id}&metodo=dni`
