@@ -1,7 +1,19 @@
 <?php
 // config/db.php
 
-// Constantes de conexión
+// ── URL Base del sistema ──────────────────────────────────────────────────────
+// Calcula automáticamente la URL base según el entorno
+if (!defined('BASE_URL')) {
+    $scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    // Obtener la ruta base desde la ubicación de este archivo
+    $docRoot  = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? '');
+    $thisDir  = str_replace('\\', '/', dirname(__DIR__));
+    $basePath = trim(str_replace($docRoot, '', $thisDir), '/');
+    define('BASE_URL', $scheme . '://' . $host . '/' . ($basePath ? $basePath . '/' : ''));
+}
+
+// ── Constantes de conexión ────────────────────────────────────────────────────
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');

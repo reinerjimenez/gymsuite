@@ -271,10 +271,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             <button onclick="window.print()" class="btn btn-secondary w-full" style="width: 100%; margin-bottom: 0.5rem;">Imprimir Ficha</button>
             <?php if ($tel_wa): ?>
             <?php 
-                // Generar URL para WhatsApp
-                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off') ? 'https://' : 'http://';
-                $host = $_SERVER['HTTP_HOST'];
-                $pase_url = $protocol . $host . BASE_URL . "pase.php?tk=" . $socio['token_qr'];
+                // Generar URL para WhatsApp (BASE_URL ya incluye dominio y protocolo)
+                $pase_url = BASE_URL . "pase.php?tk=" . $socio['token_qr'];
                 $msg_qr = "Hola " . h($socio['nombre']) . "! Te enviamos tu Pase de Acceso Digital para el gimnasio.\n\nMuestra el codigo QR en recepcion para ingresar abriendo este enlace:\n" . $pase_url;
             ?>
             <a href="https://wa.me/<?= $tel_wa ?>?text=<?= urlencode($msg_qr) ?>" target="_blank" class="btn relative" style="width: 100%; background:#22c55e; color:white; display:flex; align-items:center; justify-content:center; gap:0.5rem; text-decoration:none;">
