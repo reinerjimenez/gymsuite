@@ -1,0 +1,106 @@
+/* style.css: Reset Global y Variables */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Paleta Principal */
+    --color-primary: #F97316; /* Naranja energético */
+    --color-primary-hover: #ea580c; 
+    --color-bg: #0A0A0A; /* Negro profundo */
+    --color-surface: #1A1A1A; /* Gris oscuro para cards */
+    --color-surface-hover: #262626;
+    
+    /* Textos */
+    --color-text-main: #FFFFFF;
+    --color-text-muted: #A3A3A3;
+    
+    /* Estados */
+    --color-success: #22C55E;
+    --color-warning: #EAB308;
+    --color-danger: #EF4444;
+    
+    /* Tipografía */
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    
+    /* Variables de estructura */
+    --sidebar-width: 260px;
+    --header-height: 70px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--color-primary-hover);
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* Tipografía Utilidades */
+.text-h1 { font-size: 2rem; }
+.text-h2 { font-size: 1.5rem; }
+.text-h3 { font-size: 1.25rem; }
+.text-body { font-size: 1rem; }
+.text-small { font-size: 0.875rem; }
+.text-muted { color: var(--color-text-muted); }
+
+/* Layout Global (App Shell) */
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.content-body {
+    padding: 1.5rem;
+    flex: 1;
+}
+
+/* Contenedor Auxiliar */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+@media (max-width: 768px) {
+    .app-wrapper {
+        flex-direction: column;
+    }
+}
