@@ -7,9 +7,19 @@ session_start();
  * Verifica si hay una sesión activa, si no la hay redirige al index (login).
  */
 function verificar_sesion() {
-    if (!isset($_SESSION['usuario_id'])) {
+    // Acepta tanto usuarios del sistema como socios
+    if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['socio_id'])) {
         header("Location: /gymsuite/index.php");
         exit;
+    }
+    // Si es socio que intenta acceder a páginas no propias, redirigir
+    if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'socio') {
+        // Los socios solo pueden estar en módulos /socio/ o /rutinas/imprimir
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (strpos($uri, '/modules/socio/') === false && strpos($uri, '/rutinas/imprimir') === false) {
+            header("Location: /gymsuite/modules/socio/dashboard.php");
+            exit;
+        }
     }
 }
 
@@ -115,19 +125,22 @@ function mensaje_flash($tipo, $texto) {
  */
 function mostrar_flash() {
     if (isset($_SESSION['flash'])) {
-        $tipo = $_SESSION['flash']['tipo'];
+        $tipo  = $_SESSION['flash']['tipo'];
         $texto = $_SESSION['flash']['texto'];
-        
-        $colorClases = "bg-gray-800 text-white"; // default
-        if($tipo === 'success') $colorClases = "bg-green-600/20 text-green-400 border border-green-500/30";
-        if($tipo === 'error') $colorClases = "bg-red-600/20 text-red-400 border border-red-500/30";
-        if($tipo === 'warning') $colorClases = "bg-orange-600/20 text-orange-400 border border-orange-500/30";
-        
-        echo "<div class='p-4 rounded-lg mb-6 flex items-center justify-between {$colorClases}'>";
-        echo "<p>{$texto}</p>";
-        echo "<button onclick='this.parentElement.remove()' class='text-gray-400 hover:text-white'>&times;</button>";
+
+        $estilos = [
+            'success' => 'background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.3);',
+            'error'   => 'background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);',
+            'warning' => 'background:rgba(234,179,8,0.1);color:#eab308;border:1px solid rgba(234,179,8,0.3);',
+            'info'    => 'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);',
+        ];
+        $estilo = $estilos[$tipo] ?? 'background:rgba(255,255,255,0.05);color:white;border:1px solid #333;';
+
+        echo "<div style='padding:0.875rem 1rem;border-radius:0.5rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;{$estilo}'>";
+        echo "<p style='margin:0;font-size:0.9rem;font-weight:500;'>{$texto}</p>";
+        echo "<button onclick='this.parentElement.remove()' style='background:none;border:none;cursor:pointer;color:inherit;font-size:1.2rem;line-height:1;opacity:0.7;padding:0;'>&#215;</button>";
         echo "</div>";
-        
+
         unset($_SESSION['flash']);
     }
 }

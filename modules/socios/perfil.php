@@ -42,6 +42,50 @@ $stmt = $pdo->prepare("SELECT * FROM pagos WHERE socio_id = ? ORDER BY id DESC L
 $stmt->execute([$socio_id]);
 $pagos = $stmt->fetchAll();
 
+// Rutina asignada activa
+$stmtRut = $pdo->prepare("
+    SELECT sr.id as asignacion_id, r.id as rutina_id, r.nombre AS rutina_nombre,
+           r.objetivo, sr.fecha_asignacion
+    FROM socio_rutina sr
+    JOIN rutinas r ON r.id = sr.rutina_id
+    WHERE sr.socio_id = ? AND sr.activa = 1
+    ORDER BY sr.id DESC LIMIT 1
+");
+$stmtRut->execute([$socio_id]);
+$rutina_asignada = $stmtRut->fetch();
+
+// Rutinas disponibles para asignar
+$stmtRuts = $pdo->prepare("SELECT id, nombre FROM rutinas WHERE gimnasio_id = ? AND activa = 1 ORDER BY id ASC");
+$stmtRuts->execute([$gimnasio_id]);
+$rutinas_disponibles = $stmtRuts->fetchAll();
+
+// Últimos accesos del socio
+$stmtAcc = $pdo->prepare("SELECT fecha_hora, metodo_usado FROM accesos WHERE socio_id = ? AND gimnasio_id = ? ORDER BY fecha_hora DESC LIMIT 8");
+$stmtAcc->execute([$socio_id, $gimnasio_id]);
+$accesos = $stmtAcc->fetchAll();
+
+// Teléfono WhatsApp formateado
+$tel_wa = null;
+if ($socio['telefono']) {
+    $tel = preg_replace('/\D/', '', $socio['telefono']);
+    if (strlen($tel) === 9) $tel = '51' . $tel;
+    $tel_wa = $tel;
+}
+$objetivos_labels = ['fuerza'=>'Fuerza','cardio'=>'Cardio','perdida_peso'=>'Pérdida de Peso','tonificacion'=>'Tonificación','otro'=>'General'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['asignar_rutina'])) {
+    $nueva_rutina_id = (int)($_POST['rutina_id'] ?? 0);
+    if ($nueva_rutina_id) {
+        // Desactivar rutinas anteriores
+        $pdo->prepare("UPDATE socio_rutina SET activa=0 WHERE socio_id=?")->execute([$socio_id]);
+        // Asignar nueva
+        $pdo->prepare("INSERT INTO socio_rutina (socio_id, rutina_id, fecha_asignacion, activa) VALUES (?,?,CURDATE(),1)")
+            ->execute([$socio_id, $nueva_rutina_id]);
+        mensaje_flash('success', 'Rutina asignada correctamente.');
+    }
+    header("Location: perfil.php?id=$socio_id"); exit;
+}
+
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -129,6 +173,86 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- HISTORIAL DE ACCESOS -->
+        <div class="card" style="margin-bottom:1.25rem;">
+            <h3 class="text-h3" style="margin-bottom:1rem;">Historial de Ingresos</h3>
+            <?php if (empty($accesos)): ?>
+            <p style="color:var(--color-text-muted);font-size:0.875rem;text-align:center;padding:1rem;">Sin accesos registrados.</p>
+            <?php else: ?>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Fecha y Hora</th><th>Método</th></tr></thead>
+                    <tbody>
+                    <?php foreach($accesos as $acc):
+                        $metodos_label=['dni'=>'DNI','clave'=>'PIN','qr'=>'Código QR','manual'=>'Manual'];
+                        $metodo_tag = $metodos_label[$acc['metodo_usado']] ?? $acc['metodo_usado'];
+                    ?>
+                    <tr>
+                        <td style="font-size:0.875rem;"><?= date('d/m/Y H:i', strtotime($acc['fecha_hora'])) ?></td>
+                        <td><span class="badge" style="background:rgba(249,115,22,0.1);color:var(--color-primary);border:1px solid rgba(249,115,22,0.2);"><?= h($metodo_tag) ?></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- RUTINA ASIGNADA -->
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+                <h3 class="text-h3" style="margin:0;">Rutina Asignada</h3>
+                <?php if ($rutina_asignada): ?>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                    <a href="/gymsuite/modules/rutinas/imprimir.php?id=<?= $rutina_asignada['rutina_id'] ?>&socio_id=<?= $socio_id ?>" target="_blank" class="btn btn-secondary" style="font-size:0.8rem;min-height:36px;padding:0.4rem 0.875rem;">
+                        <svg style="width:0.9rem;height:0.9rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Ver / PDF
+                    </a>
+                    <?php if ($tel_wa): ?>
+                    <?php
+                        $msg_wa_rutina = "Hola {$socio['nombre']}! Aqui esta tu rutina de entrenamiento: ";
+                        $url_wa_rutina = "https://wa.me/{$tel_wa}?text=" . rawurlencode("Hola {$socio['nombre']}! 💪 Vi mi rutina asignada en el sistema de {$gym_nombre}. Puedes verla en el siguiente enlace o pedir una copia impresa en recepción.");
+                    ?>
+                    <a href="/gymsuite/modules/rutinas/imprimir.php?id=<?= $rutina_asignada['rutina_id'] ?>&socio_id=<?= $socio_id ?>" target="_blank"
+                       onclick="if(confirm('\u00bfEnviar la rutina por WhatsApp a <?= h($socio['nombre']) ?>?')){window.open('https://wa.me/<?= $tel_wa ?>?text=<?= rawurlencode('Hola '.$socio['nombre'].'! 💪 Aqui tienes tu rutina de entrenamiento asignada en '.$gym_nombre.'. Pasa por recepcion para la version impresa.') ?>', '_blank');}return false;"
+                       class="btn" style="background:#22c55e;color:white;font-size:0.8rem;min-height:36px;padding:0.4rem 0.875rem;gap:0.35rem;">
+                        <svg style="width:0.9rem;height:0.9rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        WhatsApp
+                    </a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($rutina_asignada): ?>
+            <div style="background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.15);border-radius:0.75rem;padding:1rem;margin-bottom:1rem;">
+                <p style="font-weight:700;color:white;margin-bottom:0.2rem;"><?= h($rutina_asignada['rutina_nombre']) ?></p>
+                <p style="font-size:0.8rem;color:var(--color-text-muted);">Objetivo: <?= h($objetivos_labels[$rutina_asignada['objetivo']] ?? 'General') ?> &nbsp;·&nbsp; Desde: <?= formatear_fecha($rutina_asignada['fecha_asignacion']) ?></p>
+            </div>
+            <?php else: ?>
+            <p style="color:var(--color-text-muted);font-size:0.875rem;margin-bottom:0.875rem;">Este socio no tiene una rutina asignada aún.</p>
+            <?php endif; ?>
+
+            <?php if (!empty($rutinas_disponibles)): ?>
+            <form method="POST" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+                <div class="form-group" style="margin:0;flex:1;min-width:180px;">
+                    <label class="form-label" style="font-size:0.75rem;"><?= $rutina_asignada ? 'Cambiar rutina' : 'Asignar rutina' ?></label>
+                    <select name="rutina_id" class="form-control" required>
+                        <option value="">-- Seleccionar --</option>
+                        <?php foreach ($rutinas_disponibles as $rd): ?>
+                        <option value="<?= $rd['id'] ?>" <?= ($rutina_asignada && $rutina_asignada['rutina_id'] == $rd['id']) ? 'selected' : '' ?>>
+                            <?= h($rd['nombre']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <button type="submit" name="asignar_rutina" value="1" class="btn btn-primary" style="font-size:0.875rem;min-height:48px;padding:0.6rem 1rem;white-space:nowrap;">
+                    <?= $rutina_asignada ? 'Actualizar' : 'Asignar' ?>
+                </button>
+            </form>
+            <?php endif; ?>
         </div>
     </div>
 
