@@ -127,14 +127,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                     ?>
                     <tr>
                         <td class="text-sm font-bold text-gray-300"><?= h($socio['dni']) ?></td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <div class="font-semibold text-white"><?= h($socio['nombre'] . ' ' . $socio['apellido']) ?></div>
                             <div class="text-xs text-gray-500">Inscrito: <?= formatear_fecha($socio['fecha_inscripcion']) ?></div>
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <div class="text-sm"><?= h($socio['telefono'] ?: 'N/A') ?></div>
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <div><span class="badge <?= $badge_clase ?>"><?= $badge_texto ?></span></div>
                             <div class="text-xs mt-1 text-gray-400"><?= $estado_texto ?></div>
                         </td>
@@ -148,6 +148,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <td>
                             <div class="flex gap-2">
                                 <a href="perfil.php?id=<?= $socio['id'] ?>" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Ver Perfil</a>
+                                <button type="button" onclick="registrarEntradaManual(<?= $socio['id'] ?>)" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Registrar Entrada</button>
                             </div>
                         </td>
                     </tr>
@@ -162,5 +163,29 @@ include __DIR__ . '/../../includes/sidebar.php';
         </div>
     </div>
 </div>
+
+<script>
+function registrarEntradaManual(socioId) {
+    if (!confirm('¿Confirmas el ingreso manual de este socio?')) return;
+    
+    fetch('<?= BASE_URL ?>ajax/registrar_acceso.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'socio_id=' + socioId + '&metodo=manual'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.exito) {
+            alert('✅ ' + data.mensaje);
+        } else {
+            alert('❌ ' + data.mensaje);
+        }
+    })
+    .catch(err => {
+        alert('❌ Error de conexión con el servidor.');
+        console.error(err);
+    });
+}
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
