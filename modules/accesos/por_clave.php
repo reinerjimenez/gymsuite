@@ -11,227 +11,316 @@ include __DIR__ . '/../../includes/sidebar.php';
 ?>
 
 <style>
-    /* ── PIN Pad ── */
-    .pinpad-wrapper {
-        max-width: 420px;
-        margin: 0 auto;
+    /* ── Method Tabs ─────────────────────────────── */
+    .method-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 1.75rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+    .method-tab {
+        padding: 0.625rem 1.125rem;
+        font-size: var(--text-sm);
+        font-weight: 600;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: var(--transition-fast);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        letter-spacing: 0.01em;
+    }
+    .method-tab:hover { color: var(--color-text-main); }
+    .method-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+    /* ── PIN Pad wrapper ─────────────────────────── */
+    .pinpad-wrapper { max-width: 400px; margin: 0 auto; }
+
+    /* ── PIN Display ─────────────────────────────── */
+    .pin-display-area {
+        background: #0A0A0A;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        margin-bottom: 0.875rem;
+        text-align: center;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+        position: relative;
+        overflow: hidden;
+    }
+    .pin-display-area::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 1rem; right: 1rem; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+    }
+    .pin-display-label {
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+        margin-bottom: 1rem;
+        display: block;
     }
     .pin-display {
         display: flex;
         justify-content: center;
-        gap: 1rem;
-        margin: 1.5rem 0;
+        gap: 1.125rem;
     }
     .pin-dot {
-        width: 1.1rem;
-        height: 1.1rem;
+        width: 14px; height: 14px;
         border-radius: 50%;
-        border: 2px solid #444;
+        border: 1.5px solid #2E2E2E;
         background: transparent;
-        transition: all 0.15s ease;
+        transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
     }
     .pin-dot.filled {
         background: var(--color-primary);
         border-color: var(--color-primary);
-        box-shadow: 0 0 10px rgba(249,115,22,0.5);
-        transform: scale(1.15);
+        box-shadow: 0 0 12px rgba(249,115,22,0.6), 0 0 4px rgba(249,115,22,0.9);
+        transform: scale(1.2);
     }
-    .pinpad-grid {
+
+    /* ── Lockout ─────────────────────────────────── */
+    .lockout-banner {
+        background: var(--color-danger-dim);
+        border: 1px solid var(--color-danger-border);
+        border-radius: var(--radius-lg);
+        padding: 1rem 1.25rem;
+        text-align: center;
+        display: none;
+        margin-bottom: 0.875rem;
+    }
+    .lockout-banner.show { display: block; animation: slideUp 0.25s ease; }
+
+    /* ── Vault Keypad ────────────────────────────── */
+    .vault-keypad {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
+        gap: 0.5rem;
     }
+
     .pin-btn {
-        background: var(--color-surface);
-        border: 1px solid #333;
-        border-radius: 0.875rem;
-        color: white;
-        font-size: 1.6rem;
+        position: relative;
+        background: linear-gradient(160deg, #1A1A1A 0%, #111111 100%);
+        border: 1px solid #242424;
+        border-bottom: 2px solid #0A0A0A;
+        border-radius: var(--radius-lg);
+        color: var(--color-text-main);
+        font-size: 1.5rem;
         font-weight: 700;
         font-family: var(--font-heading);
+        letter-spacing: -0.02em;
         cursor: pointer;
         aspect-ratio: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 0.1rem;
-        min-height: 80px;
-        transition: all 0.12s ease;
+        gap: 2px;
+        min-height: 76px;
+        transition: all 0.1s cubic-bezier(0.4,0,0.2,1);
         -webkit-tap-highlight-color: transparent;
         user-select: none;
         line-height: 1;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+        overflow: hidden;
     }
-    .pin-btn:hover { background: var(--color-surface-hover); border-color: #444; transform: scale(1.03); }
-    .pin-btn:active { transform: scale(0.96); background: #2a2a2a; }
+
+    /* Subtle top glint */
+    .pin-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 15%; right: 15%;
+        height: 1px;
+        background: rgba(255,255,255,0.06);
+    }
+
+    .pin-btn:hover {
+        background: linear-gradient(160deg, #222 0%, #181818 100%);
+        border-color: #303030;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+        color: #fff;
+    }
+
+    .pin-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.6), inset 0 2px 4px rgba(0,0,0,0.3);
+        background: linear-gradient(160deg, #111 0%, #0E0E0E 100%);
+        border-color: #1A1A1A;
+    }
+
     .pin-btn .sub-letters {
         font-size: 0.5rem;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.12em;
         color: var(--color-text-muted);
         font-family: var(--font-body);
-        font-weight: 500;
-        margin-top: 1px;
+        font-weight: 600;
+        line-height: 1;
     }
-    .pin-btn.del-btn {
-        background: rgba(239,68,68,0.08);
-        border-color: rgba(239,68,68,0.2);
-        font-size: 1rem;
-        color: #ef4444;
-    }
-    .pin-btn.del-btn:hover { background: rgba(239,68,68,0.15); }
-    .pin-btn.enter-btn {
-        background: var(--color-primary);
-        border-color: var(--color-primary);
-        font-size: 1rem;
-        color: white;
-        font-weight: 700;
-    }
-    .pin-btn.enter-btn:hover { background: var(--color-primary-hover); }
-    .pin-btn.enter-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-    /* ── Resultado ── */
-    .result-card {
-        border-radius: 1rem;
-        padding: 1.5rem;
-        animation: slideUp 0.3s ease;
-        border: 2px solid transparent;
-        margin-top: 1rem;
+    .pin-btn.del-btn {
+        background: linear-gradient(160deg, #1A0E0E 0%, #110808 100%);
+        border-color: rgba(239,68,68,0.2);
+        color: var(--color-danger);
+        font-size: 0.875rem;
     }
-    .result-card.estado-activa     { background: rgba(34,197,94,0.07);  border-color: rgba(34,197,94,0.3); }
-    .result-card.estado-por_vencer { background: rgba(234,179,8,0.07);  border-color: rgba(234,179,8,0.3); }
-    .result-card.estado-vencida    { background: rgba(239,68,68,0.07);  border-color: rgba(239,68,68,0.3); }
-    .result-card.estado-error      { background: rgba(239,68,68,0.07);  border-color: rgba(239,68,68,0.25); }
+    .pin-btn.del-btn:hover {
+        background: linear-gradient(160deg, #260E0E 0%, #1A0808 100%);
+        border-color: rgba(239,68,68,0.35);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 12px rgba(239,68,68,0.12);
+    }
+
+    .pin-btn.enter-btn {
+        background: linear-gradient(160deg, #C05A10 0%, var(--color-primary-hover) 100%);
+        border-color: var(--color-primary-hover);
+        border-bottom-color: rgba(0,0,0,0.5);
+        color: #fff;
+        font-size: 0.875rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 16px rgba(249,115,22,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .pin-btn.enter-btn:hover {
+        background: linear-gradient(160deg, #D06418 0%, #EA580C 100%);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5), var(--shadow-glow-primary);
+        transform: translateY(-1px);
+    }
+    .pin-btn.enter-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none;
+    }
+
+    /* ── Result Card ─────────────────────────────── */
+    .result-card {
+        border-radius: var(--radius-xl);
+        padding: 1.25rem;
+        animation: slideUp 0.25s ease;
+        border: 1px solid transparent;
+        margin-top: 0.875rem;
+    }
+    .result-card.estado-activa     { background: rgba(34,197,94,0.07);   border-color: var(--color-success-border); }
+    .result-card.estado-por_vencer { background: rgba(245,158,11,0.07);  border-color: var(--color-warning-border); }
+    .result-card.estado-vencida    { background: rgba(239,68,68,0.07);   border-color: var(--color-danger-border); }
+    .result-card.estado-error      { background: rgba(239,68,68,0.07);   border-color: var(--color-danger-border); }
 
     .socio-avatar {
-        width: 4rem; height: 4rem; border-radius: 50%;
-        object-fit: cover; border: 2px solid #333; flex-shrink: 0;
+        width: 3.5rem; height: 3.5rem; border-radius: 50%;
+        object-fit: cover; border: 2px solid var(--color-border-strong); flex-shrink: 0;
     }
     .socio-avatar-placeholder {
-        width: 4rem; height: 4rem; border-radius: 50%;
+        width: 3.5rem; height: 3.5rem; border-radius: 50%;
         background: var(--color-surface-hover);
         display: flex; align-items: center; justify-content: center;
-        font-size: 1.4rem; font-weight: 700;
+        font-size: 1.25rem; font-weight: 800;
         color: var(--color-text-muted); flex-shrink: 0;
         font-family: var(--font-heading);
+        border: 2px solid var(--color-border-strong);
     }
 
-    /* ── Lockout ── */
-    .lockout-banner {
-        background: rgba(239,68,68,0.1);
-        border: 1px solid rgba(239,68,68,0.3);
-        border-radius: 0.75rem;
-        padding: 1rem;
-        text-align: center;
-        display: none;
-        animation: slideUp 0.3s ease;
-    }
-    .lockout-banner.show { display: block; }
-
-    /* ── Overlay ── */
+    /* ── Confirmed Overlay ───────────────────────── */
     .confirmed-overlay {
         display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,0.88); z-index: 100;
-        flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+        background: rgba(0,0,0,0.92);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 300;
+        flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem;
     }
     .confirmed-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
     .confirmed-check {
-        width: 5rem; height: 5rem; background: var(--color-success); border-radius: 50%;
+        width: 5.5rem; height: 5.5rem;
+        background: radial-gradient(circle at 40% 35%, #26D869, var(--color-success));
+        border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 40px rgba(34,197,94,0.5);
+        box-shadow: 0 0 60px rgba(34,197,94,0.5), 0 0 120px rgba(34,197,94,0.2);
+        animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
     }
-
-    .method-tabs { display:flex; gap:0.5rem; margin-bottom:1.5rem; border-bottom:1px solid #262626; padding-bottom:0; }
-    .method-tab { padding:0.5rem 1rem; font-size:0.875rem; font-weight:600; color:var(--color-text-muted); text-decoration:none; border-bottom:2px solid transparent; transition:all 0.2s; display:flex; align-items:center; gap:0.4rem; }
-    .method-tab:hover { color:white; }
-    .method-tab.active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
-
-    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-    @keyframes shake   { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
-    @keyframes spin    { to{transform:rotate(360deg)} }
+    @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </style>
 
 <div class="pinpad-wrapper">
-    <div style="margin-bottom:1.5rem;">
+    <div style="margin-bottom:1.75rem;">
         <h1 class="text-h2" style="margin-bottom:0.25rem;">Control de Accesos</h1>
-        <p class="text-muted">El socio ingresa su PIN de 4 dígitos</p>
+        <p class="text-muted" style="font-size:var(--text-sm);">El socio ingresa su PIN de 4 dígitos</p>
     </div>
 
     <!-- Tabs -->
     <nav class="method-tabs">
-        <a href="por_dni.php"   class="method-tab">
-            <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2"/></svg>
+        <a href="por_dni.php" class="method-tab">
+            <svg style="width:0.875rem;height:0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2"/></svg>
             Por DNI
         </a>
         <a href="por_clave.php" class="method-tab active">
-            <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <svg style="width:0.875rem;height:0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             Por PIN
         </a>
-        <a href="por_qr.php"    class="method-tab">
-            <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+        <a href="por_qr.php" class="method-tab">
+            <svg style="width:0.875rem;height:0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
             Por QR
         </a>
     </nav>
 
-    <!-- Card PIN -->
-    <div class="card">
-        <p style="text-align:center; font-size:0.8rem; font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem;">Ingresa tu clave secreta</p>
-
-        <!-- Indicadores de dígitos -->
+    <!-- PIN Display -->
+    <div class="pin-display-area">
+        <span class="pin-display-label">Ingresa tu clave secreta</span>
         <div class="pin-display" id="pinDisplay">
             <div class="pin-dot" id="dot0"></div>
             <div class="pin-dot" id="dot1"></div>
             <div class="pin-dot" id="dot2"></div>
             <div class="pin-dot" id="dot3"></div>
         </div>
+    </div>
 
-        <!-- Bloqueo por intentos -->
-        <div class="lockout-banner" id="lockoutBanner">
-            <p style="color:#ef4444; font-weight:700; font-size:0.95rem; margin-bottom:0.25rem;">Sistema bloqueado temporalmente</p>
-            <p id="lockoutTimer" style="font-size:2rem; font-weight:800; font-family:var(--font-heading); color:#ef4444; margin-bottom:0.25rem;">2:00</p>
-            <p style="font-size:0.8rem; color:var(--color-text-muted);">Demasiados intentos fallidos</p>
-        </div>
+    <!-- Lockout banner -->
+    <div class="lockout-banner" id="lockoutBanner">
+        <p style="color:var(--color-danger); font-weight:700; font-size:0.9rem; margin-bottom:0.25rem;">Sistema bloqueado temporalmente</p>
+        <p id="lockoutTimer" style="font-size:2rem; font-weight:800; font-family:var(--font-heading); color:var(--color-danger); margin-bottom:0.25rem; letter-spacing:-0.03em;">2:00</p>
+        <p style="font-size:0.75rem; color:var(--color-text-muted);">Demasiados intentos fallidos</p>
+    </div>
 
-        <!-- Teclado numérico -->
-        <div id="pinpadGrid">
-            <div class="pinpad-grid">
-                <button class="pin-btn" onclick="appendDigit('1')">1</button>
-                <button class="pin-btn" onclick="appendDigit('2')">2<span class="sub-letters">ABC</span></button>
-                <button class="pin-btn" onclick="appendDigit('3')">3<span class="sub-letters">DEF</span></button>
-                <button class="pin-btn" onclick="appendDigit('4')">4<span class="sub-letters">GHI</span></button>
-                <button class="pin-btn" onclick="appendDigit('5')">5<span class="sub-letters">JKL</span></button>
-                <button class="pin-btn" onclick="appendDigit('6')">6<span class="sub-letters">MNO</span></button>
-                <button class="pin-btn" onclick="appendDigit('7')">7<span class="sub-letters">PQRS</span></button>
-                <button class="pin-btn" onclick="appendDigit('8')">8<span class="sub-letters">TUV</span></button>
-                <button class="pin-btn" onclick="appendDigit('9')">9<span class="sub-letters">WXYZ</span></button>
-                <!-- 0, Del, Enter -->
-                <button class="pin-btn del-btn" onclick="deleteDigit()">
-                    <svg style="width:1.6rem;height:1.6rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"/></svg>
-                </button>
-                <button class="pin-btn" onclick="appendDigit('0')">0</button>
-                <button class="pin-btn enter-btn" id="enterBtn" onclick="validarPin()" disabled>
-                    <svg style="width:1.6rem;height:1.6rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                </button>
-            </div>
+    <!-- Vault keypad -->
+    <div id="pinpadGrid">
+        <div class="vault-keypad">
+            <button class="pin-btn" onclick="appendDigit('1')">1</button>
+            <button class="pin-btn" onclick="appendDigit('2')">2<span class="sub-letters">ABC</span></button>
+            <button class="pin-btn" onclick="appendDigit('3')">3<span class="sub-letters">DEF</span></button>
+            <button class="pin-btn" onclick="appendDigit('4')">4<span class="sub-letters">GHI</span></button>
+            <button class="pin-btn" onclick="appendDigit('5')">5<span class="sub-letters">JKL</span></button>
+            <button class="pin-btn" onclick="appendDigit('6')">6<span class="sub-letters">MNO</span></button>
+            <button class="pin-btn" onclick="appendDigit('7')">7<span class="sub-letters">PQRS</span></button>
+            <button class="pin-btn" onclick="appendDigit('8')">8<span class="sub-letters">TUV</span></button>
+            <button class="pin-btn" onclick="appendDigit('9')">9<span class="sub-letters">WXYZ</span></button>
+            <button class="pin-btn del-btn" onclick="deleteDigit()">
+                <svg style="width:1.375rem;height:1.375rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"/></svg>
+            </button>
+            <button class="pin-btn" onclick="appendDigit('0')">0</button>
+            <button class="pin-btn enter-btn" id="enterBtn" onclick="validarPin()" disabled>
+                <svg style="width:1.375rem;height:1.375rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            </button>
         </div>
     </div>
 
-    <!-- Resultado de validación -->
+    <!-- Resultado -->
     <div id="resultadoPin"></div>
 </div>
 
 <!-- Overlay de confirmación -->
 <div class="confirmed-overlay" id="confirmedOverlay">
     <div class="confirmed-check">
-        <svg style="width:2.5rem;height:2.5rem;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg style="width:2.75rem;height:2.75rem;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
         </svg>
     </div>
-    <p style="font-size:1.75rem; font-weight:700; font-family:var(--font-heading); color:white;" id="confirmedNombre"></p>
-    <p style="color:var(--color-success); font-weight:600; font-size:1.1rem;">¡Entrada Registrada!</p>
-    <p style="color:var(--color-text-muted); font-size:0.875rem;" id="confirmedHora"></p>
+    <p style="font-size:2rem; font-weight:800; font-family:var(--font-heading); color:white; letter-spacing:-0.03em; margin:0;" id="confirmedNombre"></p>
+    <p style="color:var(--color-success); font-weight:600; font-size:1rem; letter-spacing:0.02em; text-transform:uppercase;">¡Entrada Registrada!</p>
+    <p style="color:var(--color-text-muted); font-size:var(--text-sm);" id="confirmedHora"></p>
 </div>
+
 
 <script>
 (function() {

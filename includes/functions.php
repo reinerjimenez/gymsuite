@@ -126,24 +126,35 @@ function mensaje_flash($tipo, $texto) {
 function mostrar_flash() {
     if (isset($_SESSION['flash'])) {
         $tipo  = $_SESSION['flash']['tipo'];
-        $texto = $_SESSION['flash']['texto'];
+        $texto = htmlspecialchars($_SESSION['flash']['texto'], ENT_QUOTES, 'UTF-8');
 
-        $estilos = [
-            'success' => 'background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.3);',
-            'error'   => 'background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);',
-            'warning' => 'background:rgba(234,179,8,0.1);color:#eab308;border:1px solid rgba(234,179,8,0.3);',
-            'info'    => 'background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);',
+        $clase_map = [
+            'success' => 'alert-success',
+            'error'   => 'alert-danger',
+            'warning' => 'alert-warning',
+            'info'    => 'alert-info',
         ];
-        $estilo = $estilos[$tipo] ?? 'background:rgba(255,255,255,0.05);color:white;border:1px solid #333;';
+        $clase = $clase_map[$tipo] ?? 'alert-info';
 
-        echo "<div style='padding:0.875rem 1rem;border-radius:0.5rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;{$estilo}'>";
-        echo "<p style='margin:0;font-size:0.9rem;font-weight:500;'>{$texto}</p>";
-        echo "<button onclick='this.parentElement.remove()' style='background:none;border:none;cursor:pointer;color:inherit;font-size:1.2rem;line-height:1;opacity:0.7;padding:0;'>&#215;</button>";
+        // Icon per type
+        $icons = [
+            'success' => '<svg style="width:1rem;height:1rem;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+            'error'   => '<svg style="width:1rem;height:1rem;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+            'warning' => '<svg style="width:1rem;height:1rem;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+            'info'    => '<svg style="width:1rem;height:1rem;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        ];
+        $icon = $icons[$tipo] ?? $icons['info'];
+
+        echo "<div class='alert {$clase}' role='alert'>";
+        echo $icon;
+        echo "<span style='flex:1;'>{$texto}</span>";
+        echo "<button onclick='this.closest(\".alert\").remove()' style='background:none;border:none;cursor:pointer;color:inherit;opacity:0.6;padding:0;display:flex;align-items:center;' aria-label='Cerrar'><svg style='width:0.9rem;height:0.9rem;' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></button>";
         echo "</div>";
 
         unset($_SESSION['flash']);
     }
 }
+
 
 /**
  * Aplica htmlspecialchars para prevenir XSS.
