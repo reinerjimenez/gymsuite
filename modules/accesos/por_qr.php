@@ -111,8 +111,8 @@ include __DIR__ . '/../../includes/sidebar.php';
     @keyframes spin    { to{transform:rotate(360deg)} }
 </style>
 
-<!-- jsQR via CDN -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<!-- jsQR local (más confiable en producción) -->
+<script src="<?= BASE_URL ?>assets/js/jsQR.min.js"></script>
 
 <div class="qr-wrapper">
     <div style="margin-bottom:1.5rem;">
@@ -195,6 +195,7 @@ include __DIR__ . '/../../includes/sidebar.php';
     const scanFrame  = document.getElementById('scanFrame');
     const instruccion = document.getElementById('instruccion');
     const btnRein    = document.getElementById('btnReiniciar');
+    const BASE        = '<?= BASE_URL ?>';  // URL base del sistema
 
     let scanning     = false;
     let procesando   = false;
@@ -214,30 +215,53 @@ include __DIR__ . '/../../includes/sidebar.php';
 
 
     async function iniciarCamara() {
+        // Verificar soporte de la API
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            mostrarErrorCamara('Tu navegador no soporta acceso a cámara. Usa Chrome o Safari actualizado.');
+            return;
+        }
+
         try {
-            // El uso de 'ideal' permite que si es laptop (solo tiene frontal), la use inmediatamente sin colgarse.
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: { ideal: 'environment' } } 
             });
 
             video.srcObject = stream;
-            video.setAttribute("playsinline", true);
 
-            // 3. Esperar a que el video cargue los metadatos antes de reproducir
-            video.onloadedmetadata = async () => {
-                try {
-                    await video.play();
-                    statusDiv.classList.add('hidden');
-                    scanFrame.style.display = 'block';
-                    scanning = true;
-                    requestAnimationFrame(tick);
-                } catch (playErr) {
-                    mostrarErrorCamara("No se pudo iniciar el video: " + playErr.message);
+            let scannerStarted = false;
+            function arrancarScanner() {
+                if (scannerStarted) return; // Ejecutar solo una vez
+                scannerStarted = true;
+                statusDiv.classList.add('hidden');
+                scanFrame.style.display = 'block';
+                scanning = true;
+                requestAnimationFrame(tick);
+            }
+
+            // Triple-fallback: cualquiera de los tres que dispare primero arranca el scanner
+            video.addEventListener('loadedmetadata', arrancarScanner, { once: true });
+            video.addEventListener('canplay',        arrancarScanner, { once: true });
+            // Timeout de seguridad: si ningún evento dispara en 2s, arrancamos de todas formas
+            setTimeout(() => {
+                if (!scannerStarted && video.srcObject) {
+                    arrancarScanner();
                 }
-            };
+            }, 2000);
+
+            video.play().catch(playErr => {
+                // En algunos navegadores play() requiere interacción del usuario
+                // El timeout de seguridad igualmente arrancará el scanner
+                console.warn('play() rechazado:', playErr.message);
+            });
+
         } catch (err) {
-            console.error("Error getUserMedia:", err);
-            mostrarErrorCamara("Cámara no disponible o bloqueada. Revisa los permisos.");
+            if (err.name === 'NotAllowedError') {
+                mostrarErrorCamara('Permiso de cámara denegado. Entra al sitio por <strong>https://</strong> y permite el acceso a la cámara en el ícono del candado.');
+            } else if (err.name === 'NotFoundError') {
+                mostrarErrorCamara('No se encontró ninguna cámara en este dispositivo.');
+            } else {
+                mostrarErrorCamara('Error: ' + err.message);
+            }
         }
     }
 
@@ -247,7 +271,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
         </svg>
         <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Error de Cámara</p>
-        <p style="font-size:0.8rem;color:var(--color-text-muted);">${msg}</p>`;
+        <p style="font-size:0.8rem;color:var(--color-text-muted);">${msg}</p>
+        <button onclick="iniciarCamara()" style="margin-top:1rem;background:var(--color-primary);color:white;border:none;padding:0.5rem 1.25rem;border-radius:0.5rem;cursor:pointer;font-weight:600;">Reintentar</button>`;
     }
 
     iniciarCamara();
@@ -274,7 +299,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         instruccion.textContent = 'Validando código...';
         scanFrame.style.display = 'none';
 
-        fetch(BASE_URL . 'ajax/validar_qr.php', {
+        fetch(BASE + 'ajax/validar_qr.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `token=${encodeURIComponent(token)}`
@@ -288,7 +313,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             // Registrar acceso automáticamente si membresía activa
             const esActiva = data.estado === 'activa' || data.estado === 'por_vencer';
             if (esActiva) {
-                return fetch(BASE_URL . 'ajax/registrar_acceso.php', {
+                return fetch(BASE + 'ajax/registrar_acceso.php', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `socio_id=${data.id}&metodo=qr`

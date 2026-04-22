@@ -227,6 +227,7 @@ include __DIR__ . '/../../includes/sidebar.php';
     const dniInput    = document.getElementById('dniInput');
     const resultado   = document.getElementById('resultado');
     const overlay     = document.getElementById('confirmedOverlay');
+    const BASE        = '<?= BASE_URL ?>';
     let   debounceTimer;
     let   socioActual = null;
 
@@ -345,7 +346,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         </div>
         <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
 
-        fetch(`/gymsuite/ajax/buscar_socio.php?dni=${encodeURIComponent(dni)}`)
+        fetch(`${BASE}ajax/buscar_socio.php?dni=${encodeURIComponent(dni)}`)
             .then(r => r.json())
             .then(data => {
                 if (data.encontrado && !data.bloqueado) {
@@ -368,7 +369,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         btn.disabled = true;
         btn.innerHTML = `<span style="width:1.2rem;height:1.2rem;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;"></span> Registrando...`;
 
-        fetch(BASE_URL . 'ajax/registrar_acceso.php', {
+        fetch(BASE + 'ajax/registrar_acceso.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `socio_id=${socioActual.id}&metodo=dni`

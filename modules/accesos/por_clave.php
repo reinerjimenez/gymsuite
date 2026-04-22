@@ -239,6 +239,7 @@ include __DIR__ . '/../../includes/sidebar.php';
     let lockoutActive = false;
     let lockoutInterval = null;
     let socioActual = null;
+    const BASE = '<?= BASE_URL ?>';
 
     function beepOK() {
         try {
@@ -315,7 +316,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         if (pin.length < 4 || lockoutActive) return;
         document.getElementById('enterBtn').disabled = true;
 
-        fetch(BASE_URL . 'ajax/validar_clave.php', {
+        fetch(BASE + 'ajax/validar_clave.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `pin=${encodeURIComponent(pin)}`
@@ -378,7 +379,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
     window.registrarEntrada = function() {
         if (!socioActual) return;
-        fetch(BASE_URL . 'ajax/registrar_acceso.php', {
+        fetch(BASE + 'ajax/registrar_acceso.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `socio_id=${socioActual.id}&metodo=clave`
