@@ -27,16 +27,21 @@ if (!$socio || !$socio['activo']) {
     exit;
 }
 
-// Verificar que no se registre un acceso duplicado en los últimos 5 minutos
-// (para evitar doble registro por errores de UI)
+// Verificar si el socio ya ingresó hoy
 $stmtCheck = $pdo->prepare("
-    SELECT id FROM accesos
-    WHERE socio_id = ? AND gimnasio_id = ? AND fecha_hora >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+    SELECT id, DATE_FORMAT(fecha_hora, '%h:%i %p') as hora 
+    FROM accesos
+    WHERE socio_id = ? AND gimnasio_id = ? AND DATE(fecha_hora) = CURDATE()
     LIMIT 1
 ");
 $stmtCheck->execute([$socio_id, $gimnasio_id]);
-if ($stmtCheck->fetch()) {
-    echo json_encode(['exito' => true, 'mensaje' => 'Acceso ya registrado recientemente', 'duplicado' => true]);
+$ya_ingreso = $stmtCheck->fetch();
+
+if ($ya_ingreso) {
+    echo json_encode([
+        'exito' => false, 
+        'mensaje' => 'Este socio ya registró su entrada hoy a las ' . $ya_ingreso['hora']
+    ]);
     exit;
 }
 

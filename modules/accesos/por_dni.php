@@ -391,7 +391,17 @@ include __DIR__ . '/../../includes/sidebar.php';
             } else {
                 btn.disabled = false;
                 btn.innerHTML = `<svg style="width:1.4rem;height:1.4rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Registrar Entrada`;
-                alert(data.mensaje || 'Error al registrar');
+                
+                // Mostrar error estilizado
+                resultado.innerHTML = `
+                <div class="socio-card estado-error">
+                    <div style="text-align:center; padding:1.5rem;">
+                        <svg style="width:3rem;height:3rem;color:#ef4444;margin:0 auto 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <p style="color:#ef4444; font-weight:700; font-size:1.2rem; margin-bottom:0.5rem;">Acceso Denegado</p>
+                        <p style="color:var(--color-text-muted);">${data.mensaje}</p>
+                        <button onclick="document.getElementById('dniInput').value=''; document.getElementById('dniInput').focus(); this.parentElement.parentElement.style.display='none';" class="btn btn-secondary" style="margin-top:1.5rem; width:100%;">Intentar con otro DNI</button>
+                    </div>
+                </div>`;
             }
         });
     };

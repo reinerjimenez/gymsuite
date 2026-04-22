@@ -329,6 +329,17 @@ include __DIR__ . '/../../includes/sidebar.php';
                             document.getElementById('confirmedOverlay').classList.remove('show');
                             reiniciarEscaneo();
                         }, 3000);
+                    } else {
+                        // Error del servidor (ej: ya ingresó hoy)
+                        document.getElementById('resultadoQR').innerHTML = `
+                        <div class="result-card estado-error">
+                            <div style="text-align:center;">
+                                <svg style="width:3rem;height:3rem;color:#ef4444;margin:0 auto 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <p style="color:#ef4444;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">Acceso Denegado</p>
+                                <p style="color:var(--color-text-muted);">${res.mensaje}</p>
+                            </div>
+                        </div>`;
+                        instruccion.textContent = 'Acceso denegado';
                     }
                 });
             } else {

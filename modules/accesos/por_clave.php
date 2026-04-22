@@ -397,6 +397,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                     socioActual = null;
                     resetPin();
                 }, 3500);
+            } else {
+                document.getElementById('resultadoPin').innerHTML = `
+                <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;padding:1.5rem;text-align:center;margin-top:0.75rem;animation:slideUp 0.25s ease;">
+                    <svg style="width:3rem;height:3rem;color:#ef4444;margin:0 auto 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <p style="color:#ef4444;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">Acceso Denegado</p>
+                    <p style="color:var(--color-text-muted);">${data.mensaje}</p>
+                    <button onclick="document.getElementById('resultadoPin').innerHTML=''; resetPin();" class="btn btn-secondary" style="margin-top:1rem;width:100%;">Intentar con otro PIN</button>
+                </div>`;
             }
         });
     };
