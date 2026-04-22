@@ -212,26 +212,45 @@ include __DIR__ . '/../../includes/sidebar.php';
         } catch(e) {}
     }
 
-    // Iniciar stream de cámara
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
+
+    async function iniciarCamara() {
+        try {
+            // El uso de 'ideal' permite que si es laptop (solo tiene frontal), la use inmediatamente sin colgarse.
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: { ideal: 'environment' } } 
+            });
+
             video.srcObject = stream;
-            video.onloadedmetadata = () => {
-                video.play();
-                statusDiv.classList.add('hidden');
-                scanFrame.style.display = 'block';
-                scanning = true;
-                tick();
+            video.setAttribute("playsinline", true);
+
+            // 3. Esperar a que el video cargue los metadatos antes de reproducir
+            video.onloadedmetadata = async () => {
+                try {
+                    await video.play();
+                    statusDiv.classList.add('hidden');
+                    scanFrame.style.display = 'block';
+                    scanning = true;
+                    requestAnimationFrame(tick);
+                } catch (playErr) {
+                    mostrarErrorCamara("No se pudo iniciar el video: " + playErr.message);
+                }
             };
-        })
-        .catch(err => {
-            statusDiv.innerHTML = `
-            <svg style="width:3rem;height:3rem;color:#ef4444;margin-bottom:0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-            </svg>
-            <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Cámara no disponible</p>
-            <p style="font-size:0.8rem;color:var(--color-text-muted);">Revisa los permisos del navegador<br>y recarga la página.</p>`;
-        });
+        } catch (err) {
+            console.error("Error getUserMedia:", err);
+            mostrarErrorCamara("Cámara no disponible o bloqueada. Revisa los permisos.");
+        }
+    }
+
+    function mostrarErrorCamara(msg) {
+        statusDiv.innerHTML = `
+        <svg style="width:3rem;height:3rem;color:#ef4444;margin-bottom:0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Error de Cámara</p>
+        <p style="font-size:0.8rem;color:var(--color-text-muted);">${msg}</p>`;
+    }
+
+    iniciarCamara();
 
     function tick() {
         if (!scanning) return;

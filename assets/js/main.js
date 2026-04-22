@@ -29,11 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Comportamiento responsive del sidebar
     const toggleSidebarBtn = document.getElementById('toggle_sidebar');
     const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar_overlay');
     
     if (toggleSidebarBtn && sidebar) {
         toggleSidebarBtn.addEventListener('click', () => {
-            // El sidebar en mobile puede estar transformado u oculto, lo controlamos con clase
             sidebar.classList.toggle('sidebar-open');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('show');
+            }
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('sidebar-open');
+            sidebarOverlay.classList.remove('show');
         });
     }
 

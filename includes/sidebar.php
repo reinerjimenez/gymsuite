@@ -109,10 +109,10 @@ $rol = $_SESSION['rol'] ?? '';
 <main class="main-content">
     <header class="header">
         <div class="flex items-center gap-4">
-            <button id="toggle_sidebar" class="text-gray-300 hover:text-white md:hidden">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <button id="toggle_sidebar" class="mobile-toggle-btn" aria-label="Abrir menú">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
-            <h2 class="text-h3 hidden sm:block">Panel de Control</h2>
+            <h2 class="text-h3 desktop-only-text">Panel de Control</h2>
         </div>
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">

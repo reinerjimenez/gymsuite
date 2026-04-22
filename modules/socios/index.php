@@ -13,9 +13,14 @@ $search = trim($_GET['q'] ?? '');
 $filter_estado = $_GET['estado'] ?? 'todos'; // todos, activos, inactivos
 
 $query = "
-    SELECT s.*, 
-    (SELECT MAX(fecha_fin) FROM membresias m WHERE m.socio_id = s.id AND m.gimnasio_id = ?) as fecha_fin_membresia 
-    FROM socios s 
+    SELECT s.*, max_m.fecha_fin_membresia
+    FROM socios s
+    LEFT JOIN (
+        SELECT socio_id, MAX(fecha_fin) as fecha_fin_membresia
+        FROM membresias
+        WHERE gimnasio_id = ?
+        GROUP BY socio_id
+    ) max_m ON max_m.socio_id = s.id
     WHERE s.gimnasio_id = ?
 ";
 $params = [$gimnasio_id, $gimnasio_id];

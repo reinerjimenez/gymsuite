@@ -46,6 +46,29 @@ if (isset($_SESSION['gimnasio_id'])) {
             padding: 0 1.5rem;
         }
         
+        .mobile-toggle-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-toggle-btn:hover { color: white; }
+        .mobile-toggle-btn svg { width: 1.75rem; height: 1.75rem; }
+        .desktop-only-text { display: block; }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(2px);
+            z-index: 30;
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -56,10 +79,14 @@ if (isset($_SESSION['gimnasio_id'])) {
             .sidebar.sidebar-open {
                 transform: translateX(0);
             }
+            .mobile-toggle-btn { display: flex; }
+            .desktop-only-text { display: none; }
+            .sidebar-overlay.show { display: block; }
         }
     </style>
 </head>
 <body>
 <div class="app-wrapper">
+    <div class="sidebar-overlay" id="sidebar_overlay"></div>
 
     <!-- Se incluiría el sidebar.php justo después -->
