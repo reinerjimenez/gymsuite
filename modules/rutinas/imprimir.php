@@ -18,20 +18,36 @@ $tk          = $_GET['tk'] ?? '';
 
 if (!$rutina_id) { header("Location: index.php"); exit; }
 
+$hash_seguridad = substr(md5($rutina_id . 'gymsuite_rutina'), 0, 10);
+
 if (!$is_admin) {
-    // Si no es admin, exigimos el token_qr de seguridad del socio
-    if (!$socio_id || !$tk) {
-        die('Acceso denegado. Enlace inválido.');
+    if ($socio_id) {
+        // Validar token del socio
+        if (!$tk) die('Acceso denegado. Enlace inválido.');
+        $stmtS = $pdo->prepare("SELECT id, gimnasio_id FROM socios WHERE id=? AND token_qr=?");
+        $stmtS->execute([$socio_id, $tk]);
+        $socio_auth = $stmtS->fetch();
+        if (!$socio_auth) die('Acceso denegado. El token de seguridad no es válido.');
+        $gimnasio_id = $socio_auth['gimnasio_id'];
+    } else {
+        // Validar hash público de la rutina general
+        $hash = $_GET['hash'] ?? '';
+        if ($hash !== $hash_seguridad) die('Acceso denegado. Enlace inválido.');
+        $stmt_g = $pdo->prepare("SELECT gimnasio_id FROM rutinas WHERE id=?");
+        $stmt_g->execute([$rutina_id]);
+        $gimnasio_id = $stmt_g->fetchColumn();
+        if (!$gimnasio_id) die('Rutina no encontrada.');
     }
-    $stmtS = $pdo->prepare("SELECT id, gimnasio_id FROM socios WHERE id=? AND token_qr=?");
-    $stmtS->execute([$socio_id, $tk]);
-    $socio_auth = $stmtS->fetch();
-    if (!$socio_auth) {
-        die('Acceso denegado. El token de seguridad no es válido.');
-    }
-    $gimnasio_id = $socio_auth['gimnasio_id'];
 } else {
     $gimnasio_id = isset($_SESSION['gimnasio_id']) ? $_SESSION['gimnasio_id'] : null;
+}
+
+// Generar URL pública para el QR
+if ($socio_id && isset($socio['token_qr'])) {
+    // Si la vemos después de cargar el socio, lo actualizaremos abajo. Aquí definimos la base.
+    $url_publica = ""; 
+} else {
+    $url_publica = BASE_URL . "modules/rutinas/imprimir.php?id={$rutina_id}&hash={$hash_seguridad}";
 }
 
 // Verificar que la rutina pertenece al gym
@@ -219,10 +235,24 @@ $url_wa = $telefono_wa
         .ej-table tbody tr:hover { background:white; }
         @page { margin: 1.5cm; }
     }
+
+    /* ── MOBILE ── */
+    @media (max-width: 600px) {
+        .sheet-header { padding: 1.5rem; }
+        .socio-bar { padding: 1rem 1.5rem; }
+        .ejercicios-section { padding: 1.5rem; }
+        .sheet-footer { padding: 1rem 1.5rem; }
+        .ej-table th, .ej-table td { padding: 0.75rem 0.5rem; }
+        .ej-pill { padding: 0.2rem 0.4rem; font-size: 0.65rem; }
+    }
 </style>
 </head>
 <body>
-
+<?php
+if ($socio_id && $socio && !empty($socio['token_qr'])) {
+    $url_publica = BASE_URL . "modules/rutinas/imprimir.php?id={$rutina_id}&socio_id={$socio_id}&tk={$socio['token_qr']}";
+}
+?>
 <!-- Barra de acciones (solo pantalla) -->
 <div class="action-bar">
     <div>
@@ -235,21 +265,31 @@ $url_wa = $telefono_wa
             <svg style="width:0.9rem;height:0.9rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             Editar
         </a>
-        <?php if ($telefono_wa): ?>
-        <a href="<?= $url_wa ?>" target="_blank" class="btn-wa">
-            <svg style="width:1rem;height:1rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            Enviar por WhatsApp<?= $socio ? ' a '.$socio['nombre'] : '' ?>
-        </a>
-        <?php else: ?>
-        <a href="<?= $url_wa ?>" target="_blank" class="btn-wa">
-            <svg style="width:1rem;height:1rem;" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            Compartir por WhatsApp
-        </a>
-        <?php endif; ?>
+        <button onclick="document.getElementById('qrModal').style.display='flex'" class="btn-wa" style="background:#0ea5e9;">
+            <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            Compartir por QR
+        </button>
         <?php endif; ?>
         <button onclick="window.print()" class="btn-print">
             <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
             Imprimir / Guardar PDF
+        </button>
+    </div>
+</div>
+
+<!-- Modal QR -->
+<div id="qrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; padding:1.5rem;">
+    <div style="background:white; border-radius:1rem; padding:2rem; text-align:center; max-width:320px; width:100%; position:relative;">
+        <button onclick="document.getElementById('qrModal').style.display='none'" style="position:absolute; top:1rem; right:1rem; background:none; border:none; cursor:pointer; color:#6b7280;">
+            <svg style="width:1.5rem;height:1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <h3 style="font-family:'Outfit',sans-serif; font-size:1.25rem; font-weight:800; color:#111; margin-bottom:0.25rem;">Escanear Rutina</h3>
+        <p style="font-size:0.875rem; color:#6b7280; margin-bottom:1.5rem;">El socio puede escanear este código con su celular para ver la rutina.</p>
+        
+        <div id="qrcode_box" style="background:white; padding:1rem; border:2px solid #f1f5f9; border-radius:0.75rem; display:inline-block; margin-bottom:1rem;"></div>
+        
+        <button onclick="navigator.clipboard.writeText('<?= $url_publica ?>'); alert('Enlace copiado al portapapeles');" class="btn-back" style="background:#f1f5f9; color:#374151; padding:0.5rem 1rem; border-radius:0.5rem; width:100%; justify-content:center; text-decoration:none; font-weight:600;">
+            Copiar Enlace
         </button>
     </div>
 </div>
@@ -284,34 +324,36 @@ $url_wa = $telefono_wa
         <?php if (empty($ejercicios)): ?>
         <p style="color:var(--muted);text-align:center;padding:2rem;">Sin ejercicios registrados.</p>
         <?php else: ?>
-        <table class="ej-table">
-            <thead>
+        <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="ej-table">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem;">#</th>
+                        <th>Ejercicio</th>
+                        <th style="white-space:nowrap;">Series × Reps</th>
+                        <th>Descanso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($ejercicios as $i => $ej): ?>
                 <tr>
-                    <th style="width:2.5rem;">#</th>
-                    <th>Ejercicio</th>
-                    <th style="white-space:nowrap;">Series × Reps</th>
-                    <th>Descanso</th>
+                    <td><div class="ej-num-cell"><?= $i+1 ?></div></td>
+                    <td>
+                        <p class="ej-nombre"><?= h($ej['nombre']) ?></p>
+                        <?php if ($ej['notas']): ?><p class="ej-notas"><?= h($ej['notas']) ?></p><?php endif; ?>
+                    </td>
+                    <td style="white-space:nowrap;">
+                        <span class="ej-pill"><?= h($ej['series']) ?> series</span>
+                        <span class="ej-pill"><?= h($ej['repeticiones']) ?> reps</span>
+                    </td>
+                    <td>
+                        <span class="ej-pill descanso-pill"><?= (int)$ej['descanso_segundos'] ?>s</span>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($ejercicios as $i => $ej): ?>
-            <tr>
-                <td><div class="ej-num-cell"><?= $i+1 ?></div></td>
-                <td>
-                    <p class="ej-nombre"><?= h($ej['nombre']) ?></p>
-                    <?php if ($ej['notas']): ?><p class="ej-notas"><?= h($ej['notas']) ?></p><?php endif; ?>
-                </td>
-                <td style="white-space:nowrap;">
-                    <span class="ej-pill"><?= h($ej['series']) ?> series</span>
-                    <span class="ej-pill"><?= h($ej['repeticiones']) ?> reps</span>
-                </td>
-                <td>
-                    <span class="ej-pill descanso-pill"><?= (int)$ej['descanso_segundos'] ?>s</span>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <?php endif; ?>
     </div>
 
@@ -322,5 +364,20 @@ $url_wa = $telefono_wa
 </div>
 
 <div style="height:3rem;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    if (document.getElementById('qrcode_box')) {
+        new QRCode(document.getElementById('qrcode_box'), {
+            text: "<?= $url_publica ?>",
+            width: 200,
+            height: 200,
+            colorDark : "#111111",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    }
+</script>
+
 </body>
 </html>
