@@ -69,334 +69,559 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="GymSuite — Sistema de Gestión para Gimnasios. Acceso seguro.">
+    <meta name="description" content="GymSuite — Sistema de Gestión para Gimnasios. Acceso seguro al panel.">
     <title>GymSuite | Acceso al Sistema</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* ── Login specific ───────────────────────── */
-        .login-bg {
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary:      #F97316;
+            --primary-dark: #EA580C;
+            --primary-dim:  rgba(249,115,22,0.12);
+            --font-heading: 'Space Grotesk', sans-serif;
+            --font-body:    'Inter', sans-serif;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: var(--font-body);
+            background: #080808;
+            color: #F2F2F2;
+        }
+
+        /* ── Full-screen background ───────────────── */
+        .login-page {
             min-height: 100vh;
             display: flex;
-            background: var(--color-bg);
+            align-items: stretch;
             position: relative;
             overflow: hidden;
         }
 
-        /* Ambient glow blobs */
-        .login-bg::before {
-            content: '';
-            position: absolute;
-            width: 600px; height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
-            top: -200px; left: -200px;
-            pointer-events: none;
-        }
-        .login-bg::after {
-            content: '';
-            position: absolute;
-            width: 400px; height: 400px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(249,115,22,0.05) 0%, transparent 70%);
-            bottom: -100px; right: -100px;
-            pointer-events: none;
-        }
-
-        /* Left panel — brand */
-        .login-left {
-            display: none;
-            flex: 1;
-            background: linear-gradient(135deg, #0F0F0F 0%, #080808 100%);
-            border-right: 1px solid var(--color-border);
-            padding: 3rem;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-left::before {
-            content: '';
+        .login-bg-image {
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 20% 50%, rgba(249,115,22,0.06) 0%, transparent 60%);
+            background-image: url('<?= BASE_URL ?>assets/img/gym_bg.png');
+            background-size: cover;
+            background-position: center 30%;
+            filter: brightness(0.35) saturate(0.8);
+            z-index: 0;
+            transform: scale(1.02); /* prevent white edge on parallax */
+        }
+
+        /* Dark gradient overlay left→right */
+        .login-bg-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                105deg,
+                rgba(8,8,8,0.92) 0%,
+                rgba(8,8,8,0.55) 45%,
+                rgba(249,115,22,0.08) 100%
+            );
+            z-index: 1;
+        }
+
+        /* Orange corner glow */
+        .login-bg-glow {
+            position: absolute;
+            bottom: -120px; right: -120px;
+            width: 550px; height: 550px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .login-bg-glow-top {
+            position: absolute;
+            top: -100px; left: 30%;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(249,115,22,0.07) 0%, transparent 70%);
+            z-index: 1;
             pointer-events: none;
         }
 
-        .login-brand-logo {
+        /* ── Layout split ─────────────────────────── */
+        .login-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .login-brand-icon {
-            width: 2.5rem; height: 2.5rem;
-            background: var(--color-primary);
-            border-radius: var(--radius-md);
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 20px rgba(249,115,22,0.4);
-        }
-        .login-brand-icon svg { width: 1.375rem; height: 1.375rem; color: white; }
-        .login-brand-name {
-            font-family: var(--font-heading);
-            font-size: 1.375rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            color: var(--color-text-main);
+            align-items: stretch;
+            justify-content: space-between;
         }
 
-        .login-taglines { position: relative; z-index: 1; }
-        .login-tagline-main {
-            font-family: var(--font-heading);
-            font-size: 2.75rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.1;
-            color: var(--color-text-main);
-            margin-bottom: 1rem;
-        }
-        .login-tagline-main span { color: var(--color-primary); }
-        .login-tagline-sub {
-            font-size: var(--text-base);
-            color: var(--color-text-muted);
-            line-height: 1.6;
-            max-width: 360px;
-        }
-
-        .login-features {
-            display: flex;
+        /* Left hero text panel */
+        .login-hero {
+            flex: 1;
+            display: none;
             flex-direction: column;
-            gap: 0.875rem;
+            justify-content: center;
+            padding: 2rem 6rem;
         }
-        .login-feature {
-            display: flex;
+
+        @media (min-width: 900px) {
+            .login-hero { display: flex; }
+        }
+
+        .login-hero-tag {
+            display: inline-flex;
             align-items: center;
-            gap: 0.75rem;
-            color: var(--color-text-secondary);
-            font-size: var(--text-sm);
+            gap: 0.5rem;
+            background: rgba(249,115,22,0.15);
+            border: 1px solid rgba(249,115,22,0.3);
+            border-radius: 999px;
+            padding: 0.3rem 0.875rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 1.25rem;
+            width: fit-content;
         }
-        .login-feature-dot {
+
+        .login-hero-tag span {
             width: 6px; height: 6px;
             border-radius: 50%;
-            background: var(--color-primary);
-            flex-shrink: 0;
-            box-shadow: 0 0 6px rgba(249,115,22,0.6);
+            background: var(--primary);
+            box-shadow: 0 0 6px rgba(249,115,22,0.8);
         }
 
-        @media (min-width: 900px) { .login-left { display: flex; } }
+        .login-hero-title {
+            font-family: var(--font-heading);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.05;
+            color: #fff;
+            margin-bottom: 1.25rem;
+        }
 
-        /* Right panel — form */
-        .login-right {
+        .login-hero-title em {
+            font-style: normal;
+            color: var(--primary);
+        }
+
+        .login-hero-desc {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.7;
+            max-width: 380px;
+            margin-bottom: 2.5rem;
+        }
+
+        .login-hero-stats {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .stat-item { display: flex; flex-direction: column; gap: 0.2rem; }
+        .stat-value {
+            font-family: var(--font-heading);
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+            letter-spacing: 0.03em;
+        }
+
+        /* ── Right form panel ─────────────────────── */
+        .login-form-panel {
+            width: 100%;
+            max-width: 480px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex: 0 0 460px;
-            padding: 2rem;
+            padding: 2rem 1.5rem;
+            background: rgba(8,8,8,0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-left: 1px solid rgba(255,255,255,0.05);
         }
 
-        @media (max-width: 900px) {
-            .login-right { flex: 1; }
+        @media (max-width: 899px) {
+            .login-form-panel {
+                max-width: 100%;
+                background: rgba(8,8,8,0.85);
+                border-left: none;
+            }
         }
 
-        .login-card {
+        .login-form-inner {
             width: 100%;
-            max-width: 400px;
+            max-width: 380px;
         }
 
-        .login-header {
-            margin-bottom: 2rem;
+        /* Brand */
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
         }
 
-        .login-icon-wrap {
+        .login-brand-icon {
             width: 3rem; height: 3rem;
-            background: var(--color-primary-dim);
-            border: 1px solid rgba(249,115,22,0.25);
-            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 0.875rem;
             display: flex; align-items: center; justify-content: center;
-            margin-bottom: 1.25rem;
+            box-shadow: 0 0 24px rgba(249,115,22,0.45);
+            flex-shrink: 0;
         }
-        .login-icon-wrap svg { width: 1.5rem; height: 1.5rem; color: var(--color-primary); }
-
-        .login-title {
+        .login-brand-icon svg {
+            width: 1.5rem; height: 1.5rem;
+            color: white;
+        }
+        .login-brand-name {
             font-family: var(--font-heading);
-            font-size: var(--text-2xl);
+            font-size: 1.5rem;
             font-weight: 800;
-            letter-spacing: -0.03em;
-            color: var(--color-text-main);
+            letter-spacing: -0.04em;
+            color: #fff;
+        }
+        .login-brand-name span { color: var(--primary); }
+
+        /* Heading */
+        .login-form-heading {
+            margin-bottom: 0.5rem;
+        }
+        .login-form-title {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: #fff;
+            line-height: 1.1;
             margin-bottom: 0.375rem;
         }
-        .login-subtitle {
-            font-size: var(--text-sm);
-            color: var(--color-text-muted);
+        .login-form-subtitle {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 2rem;
+            line-height: 1.5;
         }
 
-        .login-form-card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-2xl);
-            padding: 1.75rem;
-            box-shadow: var(--shadow-xl);
-            position: relative;
-            overflow: hidden;
+        /* Alert flash */
+        .login-alert {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            animation: fadeDown 0.25s ease;
         }
-
-        .login-form-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 1.5rem; right: 1.5rem; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        .login-alert.error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+            color: #FCA5A5;
         }
+        .login-alert.success {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.25);
+            color: #86EFAC;
+        }
+        .login-alert svg { width: 1rem; height: 1rem; flex-shrink: 0; }
 
-        /* Submit button with loading state */
-        .btn-login {
-            width: 100%;
-            height: 46px;
-            font-size: var(--text-base);
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-            border: none;
-            border-radius: var(--radius-lg);
-            color: white;
-            cursor: pointer;
-            transition: var(--transition-base);
-            box-shadow: 0 4px 15px rgba(249,115,22,0.3);
+        /* Form inputs */
+        .field { margin-bottom: 1.125rem; }
+
+        .field-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 0.5rem;
             letter-spacing: 0.01em;
+        }
+
+        .field-wrap { position: relative; }
+
+        .field-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.25);
+            pointer-events: none;
+            display: flex;
+        }
+        .field-icon svg { width: 1rem; height: 1rem; }
+
+        .field-input {
+            width: 100%;
+            height: 48px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 0.75rem;
+            color: #F2F2F2;
+            font-size: 0.9375rem;
+            font-family: var(--font-body);
+            padding: 0 2.75rem;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+        .field-input::placeholder { color: rgba(255,255,255,0.2); }
+        .field-input:focus {
+            border-color: var(--primary);
+            background: rgba(249,115,22,0.05);
+            box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+        }
+
+        .pass-eye {
+            position: absolute;
+            right: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: rgba(255,255,255,0.25);
+            padding: 0.25rem;
+            display: flex;
+            transition: color 0.15s;
+        }
+        .pass-eye:hover { color: rgba(255,255,255,0.7); }
+        .pass-eye svg { width: 1rem; height: 1rem; }
+
+        /* Submit */
+        .btn-submit {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            border-radius: 0.875rem;
+            color: #fff;
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
             margin-top: 0.5rem;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 20px rgba(249,115,22,0.35);
         }
-        .btn-login:hover {
+        .btn-submit:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(249,115,22,0.4);
+            box-shadow: 0 6px 28px rgba(249,115,22,0.5);
         }
-        .btn-login:active { transform: translateY(0); }
+        .btn-submit:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(249,115,22,0.3);
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .btn-submit svg { width: 1.125rem; height: 1.125rem; }
 
-        /* Toggle password */
-        .pass-toggle {
-            position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
-            background: none; border: none; cursor: pointer;
-            color: var(--color-text-muted); padding: 0.25rem;
-            transition: color 0.15s;
-            display: flex; align-items: center;
+        /* Divider */
+        .login-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            margin: 1.5rem 0 1.125rem;
         }
-        .pass-toggle:hover { color: var(--color-text-main); }
-        .pass-toggle svg { width: 1rem; height: 1rem; }
-
-        .login-hint {
-            margin-top: 1.25rem;
-            padding: 0.875rem;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.07);
         }
-        .login-hint-label {
-            font-size: 0.625rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
+        .login-divider span {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.25);
+            font-weight: 500;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
-            color: var(--color-text-muted);
-            margin-bottom: 0.375rem;
+            white-space: nowrap;
+        }
+
+        /* Access hint pills */
+        .access-hints {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .access-pill {
+            flex: 1;
+            min-width: 130px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 0.75rem;
+            padding: 0.625rem 0.875rem;
+        }
+        .access-pill-label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 0.2rem;
             display: block;
         }
-        .login-hint-text {
-            font-size: var(--text-xs);
-            color: var(--color-text-muted);
-            line-height: 1.6;
+        .access-pill-text {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.35);
+            line-height: 1.4;
         }
 
-        .login-footer {
+        /* Footer */
+        .login-foot {
             text-align: center;
-            margin-top: 1.5rem;
-            font-size: var(--text-xs);
-            color: var(--color-text-muted);
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.2);
         }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .spin { animation: spin 0.8s linear infinite; }
     </style>
 </head>
 <body>
 
-<div class="login-bg">
+<div class="login-page">
+    <!-- Background layers -->
+    <div class="login-bg-image"></div>
+    <div class="login-bg-overlay"></div>
+    <div class="login-bg-glow"></div>
+    <div class="login-bg-glow-top"></div>
 
-    <!-- Left brand panel (desktop) -->
-    <div class="login-left">
-        <div class="login-brand-logo">
-            <div class="login-brand-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <span class="login-brand-name">GymSuite</span>
-        </div>
+    <div class="login-content">
 
-        <div class="login-taglines">
-            <h1 class="login-tagline-main">
-                Gestión<br>de gimnasios<br><span>sin fricción.</span>
-            </h1>
-            <p class="login-tagline-sub">
-                Controla accesos, socios, pagos y rutinas desde un solo panel diseñado para operar a velocidad real.
-            </p>
-        </div>
-
-        <div class="login-features">
-            <div class="login-feature">
-                <div class="login-feature-dot"></div>
-                <span>Acceso por PIN, QR o DNI en segundos</span>
-            </div>
-            <div class="login-feature">
-                <div class="login-feature-dot"></div>
-                <span>Reportes y analíticas en tiempo real</span>
-            </div>
-            <div class="login-feature">
-                <div class="login-feature-dot"></div>
-                <span>Multi-sede con gestión centralizada</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right form panel -->
-    <div class="login-right">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="login-icon-wrap">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <!-- Left hero panel (desktop only) -->
+        <div class="login-hero">
+            <div>
+                <div class="login-hero-tag">
+                    <span></span>
+                    Sistema activo
                 </div>
-                <h2 class="login-title">Bienvenido</h2>
-                <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+                <h1 class="login-hero-title">
+                    Gestiona tu<br>gimnasio <em>sin<br>fricciones.</em>
+                </h1>
+                <p class="login-hero-desc">
+                    Control total de accesos, socios, membresías y pagos desde un solo panel. Veloz, seguro y diseñado para operar en tiempo real.
+                </p>
+                <div class="login-hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">3</span>
+                        <span class="stat-label">Métodos de acceso</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">100%</span>
+                        <span class="stat-label">Control en línea</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">24/7</span>
+                        <span class="stat-label">Operativo</span>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <?php mostrar_flash(); ?>
+        <!-- Right form panel -->
+        <div class="login-form-panel">
+            <div class="login-form-inner">
 
-            <div class="login-form-card">
-                <form method="POST" action="" id="loginForm">
-                    <div class="form-group">
-                        <label for="usuario" class="form-label">Usuario / DNI</label>
-                        <input
-                            type="text"
-                            id="usuario"
-                            name="usuario"
-                            class="form-control"
-                            placeholder="admin o número de DNI"
-                            required
-                            autofocus
-                            autocomplete="username"
-                        >
+                <!-- Brand -->
+                <div class="login-brand">
+                    <div class="login-brand-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="login-brand-name">Gym<span>Suite</span></span>
+                </div>
+
+                <!-- Heading -->
+                <div class="login-form-heading">
+                    <h2 class="login-form-title">¡Bienvenido!</h2>
+                    <p class="login-form-subtitle">Ingresa tus credenciales para acceder al panel</p>
+                </div>
+
+                <!-- Flash message -->
+                <?php
+                if (isset($_SESSION['flash'])) {
+                    $tipo  = $_SESSION['flash']['tipo'];
+                    $texto = htmlspecialchars($_SESSION['flash']['texto'], ENT_QUOTES, 'UTF-8');
+                    $clase = ($tipo === 'error') ? 'error' : 'success';
+                    $icon  = ($tipo === 'error')
+                        ? '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                        : '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                    echo "<div class='login-alert {$clase}'>{$icon}<span>{$texto}</span></div>";
+                    unset($_SESSION['flash']);
+                }
+                ?>
+
+                <!-- Form -->
+                <form method="POST" action="" id="loginForm" novalidate>
+
+                    <div class="field">
+                        <label for="usuario" class="field-label">Usuario / DNI</label>
+                        <div class="field-wrap">
+                            <span class="field-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </span>
+                            <input
+                                type="text"
+                                id="usuario"
+                                name="usuario"
+                                class="field-input"
+                                placeholder="admin o número de DNI"
+                                required
+                                autofocus
+                                autocomplete="username"
+                            >
+                        </div>
                     </div>
 
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label for="password" class="form-label">Contraseña / PIN</label>
-                        <div style="position:relative;">
+                    <div class="field">
+                        <label for="password" class="field-label">Contraseña / PIN</label>
+                        <div class="field-wrap">
+                            <span class="field-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </span>
                             <input
                                 type="password"
                                 id="password"
                                 name="password"
-                                class="form-control"
+                                class="field-input"
                                 placeholder="••••••••"
                                 required
                                 autocomplete="current-password"
-                                style="padding-right:2.75rem;"
                             >
-                            <button type="button" class="pass-toggle" id="togglePass" aria-label="Mostrar contraseña">
+                            <button type="button" class="pass-eye" id="togglePass" aria-label="Mostrar contraseña">
                                 <svg id="eyeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -405,48 +630,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-login" id="loginBtn">
-                        <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    <button type="submit" class="btn-submit" id="loginBtn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                        </svg>
                         Ingresar al Sistema
                     </button>
+
                 </form>
-            </div>
 
-            <div class="login-hint">
-                <span class="login-hint-label">Tipos de acceso</span>
-                <p class="login-hint-text">
-                    Personal del sistema: usuario + contraseña<br>
-                    Socios: DNI + PIN de 4 dígitos
-                </p>
-            </div>
+                <!-- Divider + hints -->
+                <div class="login-divider"><span>Tipos de acceso</span></div>
+                <div class="access-hints">
+                    <div class="access-pill">
+                        <span class="access-pill-label">Personal</span>
+                        <span class="access-pill-text">Usuario + contraseña del sistema</span>
+                    </div>
+                    <div class="access-pill">
+                        <span class="access-pill-label">Socios</span>
+                        <span class="access-pill-text">DNI + PIN de 4 dígitos</span>
+                    </div>
+                </div>
 
-            <p class="login-footer">GymSuite &copy; <?= date('Y') ?> &mdash; Sistema SaaS de Gestión</p>
+                <p class="login-foot">GymSuite &copy; <?= date('Y') ?> &mdash; Desarrollado por Dev. REINER JIMENEZ</p>
+            </div>
         </div>
-    </div>
-</div>
+
+    </div><!-- /login-content -->
+</div><!-- /login-page -->
 
 <script>
     // Toggle password visibility
-    const togglePass = document.getElementById('togglePass');
-    const passInput  = document.getElementById('password');
-    if (togglePass && passInput) {
-        togglePass.addEventListener('click', () => {
-            const isHidden = passInput.type === 'password';
-            passInput.type = isHidden ? 'text' : 'password';
-            togglePass.style.opacity = isHidden ? '1' : '0.5';
+    (function() {
+        const btn   = document.getElementById('togglePass');
+        const input = document.getElementById('password');
+        if (!btn || !input) return;
+        btn.addEventListener('click', () => {
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.style.color = show ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
         });
-    }
+    })();
+
     // Loading state on submit
-    const form = document.getElementById('loginForm');
-    const btn  = document.getElementById('loginBtn');
-    if (form && btn) {
-        form.addEventListener('submit', () => {
+    (function() {
+        const form = document.getElementById('loginForm');
+        const btn  = document.getElementById('loginBtn');
+        if (!form || !btn) return;
+        form.addEventListener('submit', function(e) {
+            if (!form.checkValidity()) return;
             btn.disabled = true;
-            btn.innerHTML = '<svg style="width:1rem;height:1rem;animation:spin 0.8s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Verificando...';
+            btn.innerHTML = `
+                <svg class="spin" style="width:1.125rem;height:1.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Verificando...
+            `;
         });
-    }
+    })();
 </script>
-<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 </body>
 </html>
-
