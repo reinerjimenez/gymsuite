@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .login-bg-image {
             position: absolute;
             inset: 0;
-            background-image: url('<?= BASE_URL ?>assets/img/gym_bg.png');
+            background-image: url('<?= BASE_URL ?>assets/img/gym_bg_opt.jpg');
             background-size: cover;
             background-position: center 30%;
             filter: brightness(0.35) saturate(0.8);

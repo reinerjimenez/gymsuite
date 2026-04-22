@@ -1,0 +1,43 @@
+# Plan de Optimización de Velocidad — GymSuite SaaS
+
+El sistema funciona rápido en el entorno local (localhost) porque no hay latencia de red y el servidor MySQL está en la misma máquina. Sin embargo, en producción, el peso de los archivos, la falta de compresión y las consultas a la base de datos sin optimizar pueden causar lentitud. 
+
+Tras una auditoría rápida del proyecto, he identificado tres pilares clave para mejorar la velocidad drásticamente.
+
+## User Review Required
+Por favor, revisa las siguientes propuestas y confírmame si estás de acuerdo para que proceda con la implementación.
+
+> [!IMPORTANT]
+> Estos cambios no afectarán el diseño ni la lógica de negocio; son estrictamente ajustes de infraestructura y configuración para máxima velocidad.
+
+## Mejoras Propuestas
+
+### 1. Nivel Servidor: Compresión y Caché (Apache `.htaccess`)
+Actualmente, el archivo `.htaccess` solo tiene redirecciones HTTPS. Cada vez que alguien entra, el servidor envía todo el CSS, JS e imágenes sin comprimir y sin decirles a los navegadores que los guarden en memoria (caché).
+- **Implementación**: Agregaré directivas para habilitar **GZIP/Deflate** (reduce el peso del texto/CSS/HTML hasta en un 70%) y **Browser Caching** para imágenes y CSS. Así, los usuarios solo descargan los recursos visuales la primera vez que entran.
+
+#### [MODIFY] [.htaccess](file:///c:/xampp/htdocs/gymsuite/.htaccess)
+
+### 2. Nivel Base de Datos: Optimización PDO y Caché en Memoria
+En producción, abrir y cerrar conexiones a la base de datos en cada click cuesta milisegundos valiosos. Además, algunas consultas masivas podrían no estar usando el mejor método.
+- **Implementación**: Modificaré `config/db.php` para habilitar conexiones persistentes (`PDO::ATTR_PERSISTENT => true`). Esto recicla las conexiones de red MySQL en producción en lugar de crear nuevas cada vez, reduciendo la latencia de red entre PHP y MySQL.
+
+#### [MODIFY] [db.php](file:///c:/xampp/htdocs/gymsuite/config/db.php)
+
+### 3. Nivel de Recursos (Assets)
+La imagen de fondo de login recién generada (`gym_bg.png`) pesa **733 KB**. Es una imagen gigantesca y pesada para una pantalla de acceso que bloquea la carga rápida.
+- **Implementación**: Comprimiré esta imagen convirtiéndola a JPG comprimido, el peso bajará de 733 KB a unos ~80 KB, haciendo que el login cargue instantáneamente de manera remota. Adaptaré `index.php` para cargar la nueva imagen optimizada.
+
+#### [MODIFY] [gym_bg.png] -> [gym_bg.jpg]
+#### [MODIFY] [index.php](file:///c:/xampp/htdocs/gymsuite/index.php)
+
+---
+
+## Verification Plan
+
+### Automated Tests
+1. Verificaré que el `.htaccess` no rompa el enrutamiento y Apache siga funcionando en localhost.
+2. Comprobaré que la imagen nueva se muestre correctamente en `index.php` con el formato optimizado.
+
+### Manual Verification
+1. Te pediré que cargues el sistema con la consola de red abierta (F12 > Red) para confirmar que el servidor está devolviendo el header `Cache-Control` y el peso total transferido bajó drásticamente.
