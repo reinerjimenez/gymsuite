@@ -570,7 +570,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php
                 if (isset($_SESSION['flash'])) {
                     $tipo  = $_SESSION['flash']['tipo'];
-                    $texto = htmlspecialchars($_SESSION['flash']['texto'], ENT_QUOTES, 'UTF-8');
+                    $texto = $_SESSION['flash']['texto']; // Contenido generado internamente, HTML permitido.
                     $clase = ($tipo === 'error') ? 'error' : 'success';
                     $icon  = ($tipo === 'error')
                         ? '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'

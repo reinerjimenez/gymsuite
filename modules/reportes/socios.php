@@ -8,19 +8,25 @@ verificar_rol(['admin']);
 
 $gimnasio_id = get_gimnasio_id();
 
-// 1. Estadísticas de Estado Global (basado en la membresía actual)
-// Estado 'activa' significa socio activo
+// 1. Estadísticas de Estado Global
+// Un socio se considera ACTIVO solo si: no está bloqueado (activo=1) Y tiene membresía vigente
 $stmtGlobal = $pdo->prepare("
     SELECT 
         (SELECT COUNT(*) FROM socios WHERE gimnasio_id = ?) as total_inscritos,
-        (SELECT COUNT(DISTINCT socio_id) FROM membresias WHERE gimnasio_id = ? AND estado = 'activa') as activos_ahora
+        (SELECT COUNT(DISTINCT s.id)
+            FROM socios s
+            JOIN membresias m ON m.socio_id = s.id
+            WHERE s.gimnasio_id = ? AND s.activo = 1 AND m.estado = 'activa'
+        ) as activos_ahora,
+        (SELECT COUNT(*) FROM socios WHERE gimnasio_id = ? AND activo = 0) as bloqueados
 ");
-$stmtGlobal->execute([$gimnasio_id, $gimnasio_id]);
+$stmtGlobal->execute([$gimnasio_id, $gimnasio_id, $gimnasio_id]);
 $stats = $stmtGlobal->fetch();
 
 $total_inscritos = $stats['total_inscritos'];
-$activos = $stats['activos_ahora'];
-$inactivos = $total_inscritos - $activos;
+$activos         = $stats['activos_ahora'];
+$bloqueados      = $stats['bloqueados'];
+$inactivos       = $total_inscritos - $activos; // incluye bloqueados + sin membresía activa
 
 // 2. Alertas: Socios "Por Vencer" (En los próximos 7 días)
 $fecha_hoy = date('Y-m-d');
@@ -87,6 +93,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <p style="font-size:2rem;font-weight:800;font-family:var(--font-heading);color:#ef4444;"><?= number_format($inactivos) ?></p>
                 <span style="font-size:0.875rem;color:var(--color-text-muted);">(<?= $total_inscritos>0 ? round(($inactivos/$total_inscritos)*100) : 0 ?>%)</span>
             </div>
+            <?php if($bloqueados > 0): ?>
+            <p style="font-size:0.75rem;color:#f87171;margin-top:0.25rem;">⛔ <?= $bloqueados ?> bloqueado<?= $bloqueados > 1 ? 's' : '' ?> manualmente</p>
+            <?php endif; ?>
         </div>
     </div>
 

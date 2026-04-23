@@ -126,7 +126,7 @@ function mensaje_flash($tipo, $texto) {
 function mostrar_flash() {
     if (isset($_SESSION['flash'])) {
         $tipo  = $_SESSION['flash']['tipo'];
-        $texto = htmlspecialchars($_SESSION['flash']['texto'], ENT_QUOTES, 'UTF-8');
+        $texto = $_SESSION['flash']['texto']; // Contenido generado internamente, HTML permitido.
 
         $clase_map = [
             'success' => 'alert-success',
