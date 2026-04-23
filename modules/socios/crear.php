@@ -34,6 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errores = true;
         }
 
+        // Verificar que el PIN no esté en uso por otro socio del mismo gimnasio
+        if (!$errores && $pin_manual !== '') {
+            $stmtPins = $pdo->prepare("SELECT clave_acceso FROM socios WHERE gimnasio_id = ? AND activo = 1 AND clave_acceso IS NOT NULL");
+            $stmtPins->execute([$gimnasio_id]);
+            $pinesExistentes = $stmtPins->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($pinesExistentes as $hash) {
+                if (password_verify($pin_manual, $hash)) {
+                    mensaje_flash('error', 'El PIN elegido ya está en uso por otro socio. Por favor elige un PIN diferente.');
+                    $errores = true;
+                    break;
+                }
+            }
+        }
+
         // Verificar duplicados solo si ingresó DNI
         if (!$errores && $dni !== '') {
             $stmt = $pdo->prepare("SELECT id FROM socios WHERE dni = ? AND gimnasio_id = ?");
@@ -81,10 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->commit();
 
                 // Mensaje SUCCESS
-                mensaje_flash('success', "
-                    <div class='mb-2'><strong>¡Socio Registrado Exitosamente!</strong></div>
-                    <div class='text-sm mt-1 text-green-200'>El PIN configurado manualmente ya se encuentra encriptado en el sistema de manera segura.</div>
-                ");
+                mensaje_flash('success', "¡Socio Registrado Exitosamente! El PIN de acceso ya se encuentra encriptado y seguro.");
                 header("Location: perfil.php?id=" . $socio_id);
                 exit;
             } catch (Exception $e) {
@@ -126,11 +137,11 @@ include __DIR__ . '/../../includes/sidebar.php';
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="dni" class="form-label">DNI / Documento</label>
-                    <input type="text" id="dni" name="dni" class="form-control">
+                    <input type="text" id="dni" name="dni" class="form-control" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="telefono" class="form-label">Teléfono (WhatsApp) *</label>
-                    <input type="text" id="telefono" name="telefono" class="form-control" required>
+                    <input type="text" id="telefono" name="telefono" class="form-control" required inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
             </div>
 
@@ -231,9 +242,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                     font-family: monospace;
                 }
                 .pin-input-premium:focus {
-                    border-color: var(--primary, #e11d48) !important;
+                    border-color: var(--color-primary) !important;
                     outline: none !important;
-                    box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.2), inset 0 2px 4px rgba(0,0,0,0.8) !important;
+                    box-shadow: 0 0 0 4px var(--color-primary-dim), inset 0 2px 4px rgba(0,0,0,0.8) !important;
                 }
                 .pin-input-premium::placeholder {
                     color: #3f3f46;
@@ -251,7 +262,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 }
                 .info-banner {
                     background: linear-gradient(90deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.3) 100%);
-                    border-left: 4px solid var(--primary, #e11d48);
+                    border-left: 4px solid var(--color-primary);
                     padding: 1.25rem;
                     border-radius: 0 0.5rem 0.5rem 0;
                     margin-top: 2rem;
@@ -279,10 +290,10 @@ include __DIR__ . '/../../includes/sidebar.php';
 
             <div class="pin-glass-card">
                 <!-- Abstract glowing orb effect -->
-                <div style="position: absolute; top: -50%; right: -10%; width: 250px; height: 250px; background: radial-gradient(circle, rgba(225, 29, 72, 0.1) 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 0;"></div>
+                <div style="position: absolute; top: -50%; right: -10%; width: 250px; height: 250px; background: radial-gradient(circle, var(--color-primary-dim) 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 0;"></div>
 
                 <div class="pin-icon-wrapper" style="position: relative; z-index: 10;">
-                    <svg style="width: 2rem; height: 2rem; color: var(--primary, #e11d48); filter: drop-shadow(0 0 8px rgba(225,29,72,0.5));" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <svg style="width: 2rem; height: 2rem; color: var(--color-primary); filter: drop-shadow(0 0 8px var(--color-primary-glow));" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </div>
                 
                 <div class="pin-text-block" style="position: relative; z-index: 10;">
@@ -321,7 +332,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
 
             <div class="info-banner">
-                <svg style="width: 1.5rem; height: 1.5rem; margin-top: 0.125rem; color: var(--primary, #e11d48); flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <svg style="width: 1.5rem; height: 1.5rem; margin-top: 0.125rem; color: var(--color-primary); flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <div class="info-text-wrapper">
                     <strong class="info-banner-title">Seguridad Algorítmica</strong>
                     <span style="color: #9ca3af;">El PIN se somete a hash unidireccional y se genera un Código QR único para ingresos por torniquete de forma transparente.</span>
