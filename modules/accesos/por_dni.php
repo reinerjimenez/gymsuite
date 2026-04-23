@@ -207,7 +207,6 @@ include __DIR__ . '/../../includes/sidebar.php';
             <p style="font-size:1.1rem; font-weight:600; margin-bottom:0.25rem;">Esperando búsqueda</p>
             <p style="font-size:0.875rem;">Escribe el DNI del socio para ver su estado</p>
         </div>
-    </div>
 </div>
 
 <!-- Overlay de confirmación de entrada -->
@@ -220,6 +219,18 @@ include __DIR__ . '/../../includes/sidebar.php';
     <p style="font-size:1.75rem; font-weight:700; font-family:var(--font-heading); color:white;" id="confirmedNombre"></p>
     <p style="color:var(--color-success); font-weight:600; font-size:1.1rem;">¡Entrada Registrada!</p>
     <p style="color: var(--color-text-muted); font-size:0.875rem;" id="confirmedHora"></p>
+</div>
+
+<!-- Overlay de Denegado -->
+<div class="confirmed-overlay" id="deniedOverlay" style="background: rgba(20, 0, 0, 0.92);">
+    <div class="confirmed-check" style="background: radial-gradient(circle at 40% 35%, #ef4444, #991b1b); box-shadow: 0 0 60px rgba(239,68,68,0.5), 0 0 120px rgba(239,68,68,0.2);">
+        <svg style="width:2.75rem;height:2.75rem;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </div>
+    <p style="font-size:2rem; font-weight:800; font-family:var(--font-heading); color:white; letter-spacing:-0.03em; margin:0;" id="deniedNombre"></p>
+    <p style="color:var(--color-danger); font-weight:600; font-size:1rem; letter-spacing:0.02em; text-transform:uppercase;">¡Acceso Denegado!</p>
+    <p style="color:var(--color-text-muted); font-size:var(--text-sm);" id="deniedMotivo"></p>
 </div>
 
 <script>
@@ -242,6 +253,20 @@ include __DIR__ . '/../../includes/sidebar.php';
             gain.gain.setValueAtTime(0.3, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
             osc.start(); osc.stop(ctx.currentTime + 0.4);
+        } catch(e) {}
+    }
+
+    function beepError() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
         } catch(e) {}
     }
 
@@ -392,16 +417,17 @@ include __DIR__ . '/../../includes/sidebar.php';
                 btn.disabled = false;
                 btn.innerHTML = `<svg style="width:1.4rem;height:1.4rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Registrar Entrada`;
                 
-                // Mostrar error estilizado
-                resultado.innerHTML = `
-                <div class="socio-card estado-error">
-                    <div style="text-align:center; padding:1.5rem;">
-                        <svg style="width:3rem;height:3rem;color:#ef4444;margin:0 auto 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <p style="color:#ef4444; font-weight:700; font-size:1.2rem; margin-bottom:0.5rem;">Acceso Denegado</p>
-                        <p style="color:var(--color-text-muted);">${data.mensaje}</p>
-                        <button onclick="document.getElementById('dniInput').value=''; document.getElementById('dniInput').focus(); this.parentElement.parentElement.style.display='none';" class="btn btn-secondary" style="margin-top:1.5rem; width:100%;">Intentar con otro DNI</button>
-                    </div>
-                </div>`;
+                beepError();
+                document.getElementById('deniedNombre').textContent = socioActual.nombre;
+                document.getElementById('deniedMotivo').textContent = data.mensaje;
+                document.getElementById('deniedOverlay').classList.add('show');
+                setTimeout(() => {
+                    document.getElementById('deniedOverlay').classList.remove('show');
+                    dniInput.value = '';
+                    resultado.innerHTML = `<div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-18 0 7 7 0 0114 0z"/></svg><p style="font-size:1.1rem;font-weight:600;margin-bottom:0.25rem;">Esperando búsqueda</p><p style="font-size:0.875rem;">Escribe el DNI del socio para ver su estado</p></div>`;
+                    socioActual = null;
+                    dniInput.focus();
+                }, 4000);
             }
         });
     };

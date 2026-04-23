@@ -321,6 +321,17 @@ include __DIR__ . '/../../includes/sidebar.php';
     <p style="color:var(--color-text-muted); font-size:var(--text-sm);" id="confirmedHora"></p>
 </div>
 
+<!-- Overlay de Denegado -->
+<div class="confirmed-overlay" id="deniedOverlay" style="background: rgba(20, 0, 0, 0.92);">
+    <div class="confirmed-check" style="background: radial-gradient(circle at 40% 35%, #ef4444, #991b1b); box-shadow: 0 0 60px rgba(239,68,68,0.5), 0 0 120px rgba(239,68,68,0.2);">
+        <svg style="width:2.75rem;height:2.75rem;color:white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </div>
+    <p style="font-size:2rem; font-weight:800; font-family:var(--font-heading); color:white; letter-spacing:-0.03em; margin:0;" id="deniedNombre"></p>
+    <p style="color:var(--color-danger); font-weight:600; font-size:1rem; letter-spacing:0.02em; text-transform:uppercase;">¡Acceso Denegado!</p>
+    <p style="color:var(--color-text-muted); font-size:var(--text-sm);" id="deniedMotivo"></p>
+</div>
 
 <script>
 (function() {
@@ -339,6 +350,20 @@ include __DIR__ . '/../../includes/sidebar.php';
             gain.gain.setValueAtTime(0.3, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
             osc.start(); osc.stop(ctx.currentTime + 0.4);
+        } catch(e) {}
+    }
+
+    function beepError() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.start(); osc.stop(ctx.currentTime + 0.3);
         } catch(e) {}
     }
 
@@ -421,10 +446,13 @@ include __DIR__ . '/../../includes/sidebar.php';
             if (!data.exito) {
                 shakeDots();
                 resetPin();
-                document.getElementById('resultadoPin').innerHTML = `
-                <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;padding:0.875rem 1rem;text-align:center;margin-top:0.75rem;animation:slideUp 0.25s ease;">
-                    <p style="color:#ef4444;font-weight:600;font-size:0.9rem;">${data.mensaje || 'PIN incorrecto'}</p>
-                </div>`;
+                beepError();
+                document.getElementById('deniedNombre').textContent = 'PIN Incorrecto';
+                document.getElementById('deniedMotivo').textContent = data.mensaje || 'La clave ingresada no es válida';
+                document.getElementById('deniedOverlay').classList.add('show');
+                setTimeout(() => {
+                    document.getElementById('deniedOverlay').classList.remove('show');
+                }, 3000);
                 return;
             }
 
@@ -437,28 +465,47 @@ include __DIR__ . '/../../includes/sidebar.php';
                 ? `<img src="<?= BASE_URL ?>uploads/fotos/${data.foto}" class="socio-avatar" alt="${data.nombre}">`
                 : `<div class="socio-avatar-placeholder">${(data.nombre||'?').charAt(0).toUpperCase()}</div>`;
 
-            document.getElementById('resultadoPin').innerHTML = `
-            <div class="result-card ${estadoClases[data.estado] || 'estado-error'}">
-                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
-                    ${avatarHTML}
-                    <div>
-                        <p style="font-size:1.15rem;font-weight:700;margin-bottom:0.15rem;">${data.nombre}</p>
-                        <p style="font-size:0.8rem;color:var(--color-text-muted);">DNI: ${data.dni}</p>
-                        <p style="font-size:0.8rem;color:var(--color-text-muted);">${data.plan || 'Sin plan activo'}</p>
+            if (!esActiva) {
+                beepError();
+                document.getElementById('deniedNombre').textContent = data.nombre;
+                document.getElementById('deniedMotivo').textContent = 'Membresía Vencida o Inactiva';
+                document.getElementById('deniedOverlay').classList.add('show');
+                setTimeout(() => {
+                    document.getElementById('deniedOverlay').classList.remove('show');
+                    document.getElementById('resultadoPin').innerHTML = `
+                    <div class="result-card estado-error">
+                        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                            ${avatarHTML}
+                            <div>
+                                <p style="font-size:1.15rem;font-weight:700;margin-bottom:0.15rem;">${data.nombre}</p>
+                                <p style="font-size:0.8rem;color:var(--color-text-muted);">DNI: ${data.dni}</p>
+                            </div>
+                        </div>
+                        <div style="text-align:center;padding:0.75rem;background:rgba(239,68,68,0.1);border-radius:0.5rem;">
+                            <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Membresía Vencida</p>
+                            <a href="<?= BASE_URL ?>modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.5rem;font-size:0.875rem;min-height:40px;padding:0.5rem 1rem;display:inline-flex;">Renovar</a>
+                        </div>
+                    </div>`;
+                    resetPin();
+                }, 3000);
+            } else {
+                document.getElementById('resultadoPin').innerHTML = `
+                <div class="result-card ${estadoClases[data.estado] || 'estado-error'}">
+                    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                        ${avatarHTML}
+                        <div>
+                            <p style="font-size:1.15rem;font-weight:700;margin-bottom:0.15rem;">${data.nombre}</p>
+                            <p style="font-size:0.8rem;color:var(--color-text-muted);">DNI: ${data.dni}</p>
+                            <p style="font-size:0.8rem;color:var(--color-text-muted);">${data.plan || 'Sin plan activo'}</p>
+                        </div>
                     </div>
-                </div>
-                ${esActiva ? `
-                <button onclick="registrarEntrada()" id="btnRegistrar" class="pin-btn enter-btn" style="width:100%;aspect-ratio:unset;min-height:52px;font-size:1rem;border-radius:0.75rem;gap:0.5rem;font-family:var(--font-body);">
-                    <svg style="width:1.4rem;height:1.4rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Registrar Entrada
-                </button>` : `
-                <div style="text-align:center;padding:0.75rem;background:rgba(239,68,68,0.1);border-radius:0.5rem;">
-                    <p style="color:#ef4444;font-weight:700;margin-bottom:0.25rem;">Membresía Vencida</p>
-                    <a href="<?= BASE_URL ?>modules/membresias/renovar.php?socio_id=${data.id}" class="btn btn-primary" style="margin-top:0.5rem;font-size:0.875rem;min-height:40px;padding:0.5rem 1rem;display:inline-flex;">Renovar</a>
-                </div>`}
-            </div>`;
-
-            if (esActiva) registrarEntrada();
+                    <button onclick="registrarEntrada()" id="btnRegistrar" class="pin-btn enter-btn" style="width:100%;aspect-ratio:unset;min-height:52px;font-size:1rem;border-radius:0.75rem;gap:0.5rem;font-family:var(--font-body);">
+                        <svg style="width:1.4rem;height:1.4rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Registrar Entrada
+                    </button>
+                </div>`;
+                registrarEntrada();
+            }
         })
         .catch(() => {
             document.getElementById('resultadoPin').innerHTML = `<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;padding:0.875rem;text-align:center;margin-top:0.75rem;"><p style="color:#ef4444;font-weight:600;">Error de conexión</p></div>`;
@@ -487,13 +534,16 @@ include __DIR__ . '/../../includes/sidebar.php';
                     resetPin();
                 }, 3500);
             } else {
-                document.getElementById('resultadoPin').innerHTML = `
-                <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;padding:1.5rem;text-align:center;margin-top:0.75rem;animation:slideUp 0.25s ease;">
-                    <svg style="width:3rem;height:3rem;color:#ef4444;margin:0 auto 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <p style="color:#ef4444;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">Acceso Denegado</p>
-                    <p style="color:var(--color-text-muted);">${data.mensaje}</p>
-                    <button onclick="document.getElementById('resultadoPin').innerHTML=''; resetPin();" class="btn btn-secondary" style="margin-top:1rem;width:100%;">Intentar con otro PIN</button>
-                </div>`;
+                beepError();
+                document.getElementById('deniedNombre').textContent = socioActual.nombre;
+                document.getElementById('deniedMotivo').textContent = data.mensaje;
+                document.getElementById('deniedOverlay').classList.add('show');
+                setTimeout(() => {
+                    document.getElementById('deniedOverlay').classList.remove('show');
+                    document.getElementById('resultadoPin').innerHTML = '';
+                    socioActual = null;
+                    resetPin();
+                }, 4000);
             }
         });
     };
