@@ -147,8 +147,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                         </td>
                         <td>
                             <div class="flex gap-2">
-                                <a href="perfil.php?id=<?= $socio['id'] ?>" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Ver Perfil</a>
-                                <button type="button" onclick="registrarEntradaManual(<?= $socio['id'] ?>)" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Registrar Entrada</button>
+                                <a href="perfil.php?id=<?= $socio['id'] ?>" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Ver Perfil</a>
+                                <button type="button" onclick="registrarEntradaManual(<?= $socio['id'] ?>)" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Registrar Entrada</button>
                             </div>
                         </td>
                     </tr>

@@ -76,11 +76,15 @@
 }
 
 .btn-success {
+    background: var(--color-success);
+    color: #000;
+    border-color: var(--color-success);
+}
+.btn-success:hover {
     background: var(--color-success-dim);
     color: var(--color-success);
     border-color: var(--color-success-border);
 }
-.btn-success:hover { background: var(--color-success); color: #000; border-color: var(--color-success); }
 
 .btn-sm { height: 30px; padding: 0 0.75rem; font-size: var(--text-xs); border-radius: var(--radius-sm); }
 .btn-lg { height: 46px; padding: 0 1.5rem; font-size: var(--text-base); border-radius: var(--radius-lg); }
