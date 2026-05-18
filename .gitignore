@@ -1,0 +1,20 @@
+# Ignorar la carpeta de archivos subidos para no saturar el repositorio
+/uploads/*
+!/uploads/.keep
+
+# Ignorar archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Ignorar logs locales
+*.log
+/scratch/
+
+# Entornos virtuales o dependencias (si en el futuro se implementa Composer/NPM)
+node_modules/
+vendor/
+
+# Archivos de entorno y configuraciones locales (Descomentar si usas .env)
+# .env
+# config/db.local.php

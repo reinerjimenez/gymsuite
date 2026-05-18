@@ -240,6 +240,50 @@ include __DIR__ . '/../../includes/sidebar.php';
     }
 
 
+    // Palabras clave de cámaras virtuales conocidas (case-insensitive)
+    const VIRTUAL_CAM_KEYWORDS = ['obs', 'virtual', 'ndi', 'manycam', 'xsplit', 'snap camera', 'droidcam', 'iriun', 'elgato', 'reincubate', 'mmhmm', 'streamlabs'];
+
+    function esVirtual(label) {
+        const l = label.toLowerCase();
+        return VIRTUAL_CAM_KEYWORDS.some(k => l.includes(k));
+    }
+
+    async function elegirCamaraFisica() {
+        // Solicitar permiso primero (sin él, los labels estarán vacíos)
+        let permStream = null;
+        try {
+            permStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch(e) {
+            return null; // Sin permiso — dejar que el catch principal lo maneje
+        }
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const camaras = devices.filter(d => d.kind === 'videoinput');
+
+        // Detener el stream de permiso temporal
+        permStream.getTracks().forEach(t => t.stop());
+
+        // Filtrar virtuales
+        const fisicas = camaras.filter(d => !esVirtual(d.label));
+
+        if (fisicas.length === 0) return null; // Sin cámaras físicas → fallback
+
+        // Intentar primero con facingMode environment en las físicas
+        for (const cam of fisicas) {
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: cam.deviceId }, facingMode: { ideal: 'environment' } }
+                });
+                return s;
+            } catch(e) { /* probar la siguiente */ }
+        }
+
+        // Si ninguna acepta environment, usar la primera física disponible
+        return navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: fisicas[0].deviceId } }
+        });
+    }
+
     async function iniciarCamara() {
         // Verificar soporte de la API
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -248,9 +292,15 @@ include __DIR__ . '/../../includes/sidebar.php';
         }
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: { ideal: 'environment' } } 
-            });
+            // 1. Intentar selección inteligente (filtra cámaras virtuales)
+            let stream = await elegirCamaraFisica();
+
+            // 2. Fallback: si no se pudo filtrar, pedir cualquier cámara con environment ideal
+            if (!stream) {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' } }
+                });
+            }
 
             video.srcObject = stream;
 
