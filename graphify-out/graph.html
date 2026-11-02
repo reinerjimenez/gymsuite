@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>graphify - graphify-out/graph.html</title>
+<script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"
+        integrity="sha384-Ux6phic9PEHJ38YtrijhkzyJ8yQlH8i/+buBR8s3mAZOJrP1gwyvAcIYl3GWtpX1"
+        crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #0f0f1a; --panel: #1a1a2e; --border: #2a2a4e; --input-border: #3a3a5e;
+    --text: #e0e0e0; --text-2: #aaa; --text-3: #ccc; --muted: #555; --count: #666;
+    --neighbor-border: #333; --node-label: #ffffff;
+  }
+  [data-theme="light"] {
+    --bg: #ffffff; --panel: #f8f9fa; --border: #d9dee5; --input-border: #c3cad4;
+    --text: #222222; --text-2: #666666; --text-3: #333333; --muted: #888888; --count: #777777;
+    --neighbor-border: #ccc; --node-label: #222222;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
+  #graph { flex: 1; }
+  #sidebar { width: 280px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  #search-wrap { padding: 12px; border-bottom: 1px solid var(--border); }
+  #search { width: 100%; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); padding: 7px 10px; border-radius: 6px; font-size: 13px; outline: none; }
+  #search:focus { border-color: #4E79A7; }
+  #search-results { max-height: 140px; overflow-y: auto; padding: 4px 12px; border-bottom: 1px solid var(--border); display: none; }
+  .search-item { padding: 4px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .search-item:hover { background: var(--border); }
+  #info-panel { padding: 14px; border-bottom: 1px solid var(--border); min-height: 140px; }
+  #info-panel h3 { font-size: 13px; color: var(--text-2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #info-content { font-size: 13px; color: var(--text-3); line-height: 1.6; }
+  #info-content .field { margin-bottom: 5px; }
+  #info-content .field b { color: var(--text); }
+  #info-content .empty { color: var(--muted); font-style: italic; }
+  .neighbor-link { display: block; padding: 2px 6px; margin: 2px 0; border-radius: 3px; cursor: pointer; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid var(--neighbor-border); }
+  .neighbor-link:hover { background: var(--border); }
+  #neighbors-list { max-height: 160px; overflow-y: auto; margin-top: 4px; }
+  #legend-wrap { flex: 1; overflow-y: auto; padding: 12px; }
+  #legend-wrap h3 { font-size: 13px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; font-size: 12px; }
+  .legend-item:hover { background: var(--border); padding-left: 4px; }
+  .legend-item.dimmed { opacity: 0.35; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-count { color: var(--count); font-size: 11px; }
+  #stats { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+  #legend-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 4px 0; }
+  #legend-controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--text-2); user-select: none; }
+  #legend-controls label:hover { color: var(--text); }
+  .legend-cb, #select-all-cb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--input-border); border-radius: 3px; background: var(--bg); cursor: pointer; position: relative; flex-shrink: 0; }
+  .legend-cb:checked, #select-all-cb:checked { background: #4E79A7; border-color: #4E79A7; }
+  .legend-cb:checked::after, #select-all-cb:checked::after { content: ''; position: absolute; left: 3.5px; top: 1px; width: 4px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  #select-all-cb:indeterminate { background: #4E79A7; border-color: #4E79A7; }
+  #select-all-cb:indeterminate::after { content: ''; position: absolute; left: 2px; top: 5px; width: 8px; height: 2px; background: #fff; border: none; transform: none; }
+  #theme-wrap { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  #theme-wrap button { flex: 1; background: var(--bg); color: var(--text-2); border: 1px solid var(--input-border); border-radius: 4px; padding: 3px 0; font-size: 11px; cursor: pointer; }
+  #theme-wrap button:hover { color: var(--text); }
+  #theme-wrap button[aria-pressed="true"] { background: #4E79A7; border-color: #4E79A7; color: #fff; }
+</style>
+<script id="graphify-theme-init">
+// Apply the saved theme before first paint (#3894). No saved choice keeps the
+// historical dark look; "system" follows prefers-color-scheme.
+(function () {
+  var pref = null;
+  try { pref = localStorage.getItem('graphify-theme'); } catch (e) {}
+  var t = pref === 'light' ? 'light'
+    : pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+    : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+</head>
+<body>
+<div id="graph"></div>
+<div id="sidebar">
+  <div id="theme-wrap" role="group" aria-label="Theme">
+    <button type="button" data-theme-choice="light">Light</button>
+    <button type="button" data-theme-choice="dark">Dark</button>
+    <button type="button" data-theme-choice="system">System</button>
+  </div>
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="Search nodes..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div id="info-panel">
+    <h3>Node Info</h3>
+    <div id="info-content"><span class="empty">Click a node to inspect it</span></div>
+  </div>
+  <div id="legend-wrap">
+    <h3>Communities</h3>
+    <div id="legend-controls">
+      <label><input type="checkbox" id="select-all-cb" checked onchange="toggleAllCommunities(!this.checked)">Select All</label>
+    </div>
+    <div id="legend"></div>
+  </div>
+  <div id="stats">109 nodes &middot; 91 edges &middot; 48 communities</div>
+</div>
+<script>
+const RAW_NODES = [{"id": "assets_js_jsqr_min_a", "label": "a()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 20.9, "font": {"size": 12, "color": "#ffffff"}, "title": "a()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 4}, {"id": "assets_js_jsqr_min_b", "label": "B()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 20.9, "font": {"size": 12, "color": "#ffffff"}, "title": "B()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 4}, {"id": "assets_js_jsqr_min_c", "label": "c()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 23.6, "font": {"size": 12, "color": "#ffffff"}, "title": "c()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 5}, {"id": "assets_js_jsqr_min_d", "label": "d()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 26.4, "font": {"size": 12, "color": "#ffffff"}, "title": "d()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 6}, {"id": "assets_js_jsqr_min_i", "label": "i()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 20.9, "font": {"size": 12, "color": "#ffffff"}, "title": "i()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 4}, {"id": "assets_js_jsqr_min_k", "label": "k()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 23.6, "font": {"size": 12, "color": "#ffffff"}, "title": "k()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 5}, {"id": "assets_js_jsqr_min_l", "label": "l()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "l()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 2}, {"id": "assets_js_jsqr_min_n", "label": "n()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 23.6, "font": {"size": 12, "color": "#ffffff"}, "title": "n()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 5}, {"id": "assets_js_jsqr_min_o", "label": "o()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "o()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 1}, {"id": "assets_js_jsqr_min_r", "label": "r()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "r()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 1}, {"id": "assets_js_jsqr_min_s", "label": "s()", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "s()", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 2}, {"id": "includes_functions_calcular_estado_membresia", "label": "calcular_estado_membresia()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "calcular_estado_membresia()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 2}, {"id": "includes_functions_dias_restantes", "label": "dias_restantes()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "dias_restantes()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 2}, {"id": "includes_functions_formatear_fecha", "label": "formatear_fecha()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "formatear_fecha()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_formatear_moneda", "label": "formatear_moneda()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "formatear_moneda()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_generar_token_qr", "label": "generar_token_qr()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "generar_token_qr()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_get_gimnasio_id", "label": "get_gimnasio_id()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "get_gimnasio_id()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_h", "label": "h()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "h()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_mensaje_flash", "label": "mensaje_flash()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "mensaje_flash()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_mostrar_flash", "label": "mostrar_flash()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "mostrar_flash()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_verificar_rol", "label": "verificar_rol()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "verificar_rol()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "includes_functions_verificar_sesion", "label": "verificar_sesion()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "verificar_sesion()", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_qr_beeperror", "label": "beepError()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "beepError()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_beepok", "label": "beepOK()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "beepOK()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_elegircamarafisica", "label": "elegirCamaraFisica()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.2, "font": {"size": 12, "color": "#ffffff"}, "title": "elegirCamaraFisica()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 3}, {"id": "modules_accesos_por_qr_esvirtual", "label": "esVirtual()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "esVirtual()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_iniciarcamara", "label": "iniciarCamara()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 20.9, "font": {"size": 12, "color": "#ffffff"}, "title": "iniciarCamara()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 4}, {"id": "modules_accesos_por_qr_iniciarcamara_arrancarscanner", "label": "arrancarScanner()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "arrancarScanner()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_mostrarerror", "label": "mostrarError()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "mostrarError()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_mostrarerrorcamara", "label": "mostrarErrorCamara()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "mostrarErrorCamara()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_mostrarvencido", "label": "mostrarVencido()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "mostrarVencido()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_qr_procesartoken", "label": "procesarToken()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 26.4, "font": {"size": 12, "color": "#ffffff"}, "title": "procesarToken()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 6}, {"id": "modules_accesos_por_qr_tick", "label": "tick()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.2, "font": {"size": 12, "color": "#ffffff"}, "title": "tick()", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 3}, {"id": "modules_accesos_por_clave_beeperror", "label": "beepError()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "beepError()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_clave_beepok", "label": "beepOK()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "beepOK()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_clave_resetpin", "label": "resetPin()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.2, "font": {"size": 12, "color": "#ffffff"}, "title": "resetPin()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 3}, {"id": "modules_accesos_por_clave_shakedots", "label": "shakeDots()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "shakeDots()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_clave_startlockout", "label": "startLockout()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.2, "font": {"size": 12, "color": "#ffffff"}, "title": "startLockout()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 3}, {"id": "modules_accesos_por_clave_startlockout_updatetimer", "label": "updateTimer()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "updateTimer()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_clave_updatedisplay", "label": "updateDisplay()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "updateDisplay()", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_dni_beeperror", "label": "beepError()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "beepError()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_dni_beepok", "label": "beepOK()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "beepOK()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 1}, {"id": "modules_accesos_por_dni_buscarsocio", "label": "buscarSocio()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 18.2, "font": {"size": 12, "color": "#ffffff"}, "title": "buscarSocio()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 3}, {"id": "modules_accesos_por_dni_getavatarhtml", "label": "getAvatarHTML()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "getAvatarHTML()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_dni_getestadolabel", "label": "getEstadoLabel()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "getEstadoLabel()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_dni_rendernoencontrado", "label": "renderNoEncontrado()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 15.5, "font": {"size": 12, "color": "#ffffff"}, "title": "renderNoEncontrado()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 2}, {"id": "modules_accesos_por_dni_rendersocio", "label": "renderSocio()", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 20.9, "font": {"size": 12, "color": "#ffffff"}, "title": "renderSocio()", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 4}, {"id": "includes_sidebar_nav_active", "label": "nav_active()", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "nav_active()", "community": 7, "community_name": "sidebar.php", "source_file": "includes/sidebar.php", "file_type": "code", "degree": 1}, {"id": "modules_pagos_index_closure_1", "label": "{closure#1}()", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "{closure#1}()", "community": 8, "community_name": "pagos/index.php", "source_file": "modules/pagos/index.php", "file_type": "code", "degree": 1}, {"id": "modules_socios_index_registrarentradamanual", "label": "registrarEntradaManual()", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "registrarEntradaManual()", "community": 9, "community_name": "socios/index.php", "source_file": "modules/socios/index.php", "file_type": "code", "degree": 1}, {"id": "assets_js_jsqr_min", "label": "jsQR.min.js", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 40.0, "font": {"size": 12, "color": "#ffffff"}, "title": "jsQR.min.js", "community": 0, "community_name": "jsQR.min.js", "source_file": "assets/js/jsQR.min.js", "file_type": "code", "degree": 11}, {"id": "includes_functions", "label": "functions.php", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 40.0, "font": {"size": 12, "color": "#ffffff"}, "title": "functions.php", "community": 1, "community_name": "functions.php", "source_file": "includes/functions.php", "file_type": "code", "degree": 11}, {"id": "ajax_buscar_socio", "label": "buscar_socio.php", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "buscar_socio.php", "community": 10, "community_name": "buscar_socio.php", "source_file": "ajax/buscar_socio.php", "file_type": "code", "degree": 0}, {"id": "ajax_registrar_acceso", "label": "registrar_acceso.php", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "registrar_acceso.php", "community": 11, "community_name": "registrar_acceso.php", "source_file": "ajax/registrar_acceso.php", "file_type": "code", "degree": 0}, {"id": "ajax_validar_clave", "label": "validar_clave.php", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "validar_clave.php", "community": 12, "community_name": "validar_clave.php", "source_file": "ajax/validar_clave.php", "file_type": "code", "degree": 0}, {"id": "ajax_validar_qr", "label": "validar_qr.php", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "validar_qr.php", "community": 13, "community_name": "validar_qr.php", "source_file": "ajax/validar_qr.php", "file_type": "code", "degree": 0}, {"id": "assets_js_main", "label": "main.js", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "main.js", "community": 14, "community_name": "main.js", "source_file": "assets/js/main.js", "file_type": "code", "degree": 0}, {"id": "config_db", "label": "db.php", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "db.php", "community": 15, "community_name": "db.php", "source_file": "config/db.php", "file_type": "code", "degree": 0}, {"id": "includes_footer", "label": "footer.php", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "footer.php", "community": 16, "community_name": "footer.php", "source_file": "includes/footer.php", "file_type": "code", "degree": 0}, {"id": "includes_header", "label": "header.php", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "header.php", "community": 17, "community_name": "header.php", "source_file": "includes/header.php", "file_type": "code", "degree": 0}, {"id": "index", "label": "index.php", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "index.php", "community": 18, "community_name": "index.php", "source_file": "index.php", "file_type": "code", "degree": 0}, {"id": "logout", "label": "logout.php", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "logout.php", "community": 19, "community_name": "logout.php", "source_file": "logout.php", "file_type": "code", "degree": 0}, {"id": "modules_accesos_por_qr", "label": "por_qr.php", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 37.3, "font": {"size": 12, "color": "#ffffff"}, "title": "por_qr.php", "community": 2, "community_name": "por_qr.php", "source_file": "modules/accesos/por_qr.php", "file_type": "code", "degree": 10}, {"id": "modules_accesos_index", "label": "accesos/index.php", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "accesos/index.php", "community": 20, "community_name": "accesos/index.php", "source_file": "modules/accesos/index.php", "file_type": "code", "degree": 0}, {"id": "modules_configuracion_index", "label": "configuracion/index.php", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "configuracion/index.php", "community": 21, "community_name": "configuracion/index.php", "source_file": "modules/configuracion/index.php", "file_type": "code", "degree": 0}, {"id": "modules_dashboard_index", "label": "dashboard/index.php", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "dashboard/index.php", "community": 22, "community_name": "dashboard/index.php", "source_file": "modules/dashboard/index.php", "file_type": "code", "degree": 0}, {"id": "modules_dashboard_mi_perfil", "label": "mi_perfil.php", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "mi_perfil.php", "community": 23, "community_name": "mi_perfil.php", "source_file": "modules/dashboard/mi_perfil.php", "file_type": "code", "degree": 0}, {"id": "modules_membresias_procesar_renovacion", "label": "procesar_renovacion.php", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "procesar_renovacion.php", "community": 24, "community_name": "procesar_renovacion.php", "source_file": "modules/membresias/procesar_renovacion.php", "file_type": "code", "degree": 0}, {"id": "modules_membresias_renovar", "label": "renovar.php", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "renovar.php", "community": 25, "community_name": "renovar.php", "source_file": "modules/membresias/renovar.php", "file_type": "code", "degree": 0}, {"id": "modules_planes_crear", "label": "planes/crear.php", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "planes/crear.php", "community": 26, "community_name": "planes/crear.php", "source_file": "modules/planes/crear.php", "file_type": "code", "degree": 0}, {"id": "modules_planes_editar", "label": "planes/editar.php", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "planes/editar.php", "community": 27, "community_name": "planes/editar.php", "source_file": "modules/planes/editar.php", "file_type": "code", "degree": 0}, {"id": "modules_planes_index", "label": "planes/index.php", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "planes/index.php", "community": 28, "community_name": "planes/index.php", "source_file": "modules/planes/index.php", "file_type": "code", "degree": 0}, {"id": "modules_recepcionistas_crear", "label": "recepcionistas/crear.php", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "recepcionistas/crear.php", "community": 29, "community_name": "recepcionistas/crear.php", "source_file": "modules/recepcionistas/crear.php", "file_type": "code", "degree": 0}, {"id": "readme", "label": "README.md", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 26.4, "font": {"size": 12, "color": "#ffffff"}, "title": "README.md", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 6}, {"id": "readme_arquitectura_multi_tenant_saas", "label": "\ud83c\udfe2 Arquitectura Multi-Tenant (SaaS)", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83c\udfe2 Arquitectura Multi-Tenant (SaaS)", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_control_de_acceso_hologr\u00e1fico", "label": "\u26a1 Control de Acceso Hologr\u00e1fico", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\u26a1 Control de Acceso Hologr\u00e1fico", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_estructura_del_proyecto", "label": "\ud83d\udce6 Estructura del Proyecto", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83d\udce6 Estructura del Proyecto", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_funcionalidades_principales", "label": "\u2728 Funcionalidades Principales", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 23.6, "font": {"size": 12, "color": "#ffffff"}, "title": "\u2728 Funcionalidades Principales", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 5}, {"id": "readme_gesti\u00f3n_de_membres\u00edas_y_finanzas", "label": "\ud83d\udcb3 Gesti\u00f3n de Membres\u00edas y Finanzas", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83d\udcb3 Gesti\u00f3n de Membres\u00edas y Finanzas", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_instalaci\u00f3n_y_despliegue_local", "label": "\u2699\ufe0f Instalaci\u00f3n y Despliegue Local", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\u2699\ufe0f Instalaci\u00f3n y Despliegue Local", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_inteligencia_deportiva_rutinas", "label": "\ud83c\udfcb\ufe0f Inteligencia Deportiva (Rutinas)", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83c\udfcb\ufe0f Inteligencia Deportiva (Rutinas)", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_seguridad_y_buenas_pr\u00e1cticas", "label": "\ud83d\udee1\ufe0f Seguridad y Buenas Pr\u00e1cticas", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83d\udee1\ufe0f Seguridad y Buenas Pr\u00e1cticas", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_sobre_el_proyecto", "label": "\ud83d\ude80 Sobre el Proyecto", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83d\ude80 Sobre el Proyecto", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "readme_stack_tecnol\u00f3gico", "label": "\ud83d\udee0\ufe0f Stack Tecnol\u00f3gico", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "\ud83d\udee0\ufe0f Stack Tecnol\u00f3gico", "community": 3, "community_name": "README.md", "source_file": "README.md", "file_type": "document", "degree": 1}, {"id": "modules_recepcionistas_editar", "label": "recepcionistas/editar.php", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "recepcionistas/editar.php", "community": 30, "community_name": "recepcionistas/editar.php", "source_file": "modules/recepcionistas/editar.php", "file_type": "code", "degree": 0}, {"id": "modules_recepcionistas_index", "label": "recepcionistas/index.php", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "recepcionistas/index.php", "community": 31, "community_name": "recepcionistas/index.php", "source_file": "modules/recepcionistas/index.php", "file_type": "code", "degree": 0}, {"id": "modules_reportes_asistencia", "label": "asistencia.php", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "asistencia.php", "community": 32, "community_name": "asistencia.php", "source_file": "modules/reportes/asistencia.php", "file_type": "code", "degree": 0}, {"id": "modules_reportes_index", "label": "reportes/index.php", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "reportes/index.php", "community": 33, "community_name": "reportes/index.php", "source_file": "modules/reportes/index.php", "file_type": "code", "degree": 0}, {"id": "modules_reportes_ingresos", "label": "ingresos.php", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "ingresos.php", "community": 34, "community_name": "ingresos.php", "source_file": "modules/reportes/ingresos.php", "file_type": "code", "degree": 0}, {"id": "modules_reportes_socios", "label": "socios.php", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "socios.php", "community": 35, "community_name": "socios.php", "source_file": "modules/reportes/socios.php", "file_type": "code", "degree": 0}, {"id": "modules_rutinas_editar", "label": "rutinas/editar.php", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "rutinas/editar.php", "community": 36, "community_name": "rutinas/editar.php", "source_file": "modules/rutinas/editar.php", "file_type": "code", "degree": 0}, {"id": "modules_rutinas_imprimir", "label": "imprimir.php", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "imprimir.php", "community": 37, "community_name": "imprimir.php", "source_file": "modules/rutinas/imprimir.php", "file_type": "code", "degree": 0}, {"id": "modules_rutinas_index", "label": "rutinas/index.php", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "rutinas/index.php", "community": 38, "community_name": "rutinas/index.php", "source_file": "modules/rutinas/index.php", "file_type": "code", "degree": 0}, {"id": "modules_socio_cambiar_clave", "label": "cambiar_clave.php", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "cambiar_clave.php", "community": 39, "community_name": "cambiar_clave.php", "source_file": "modules/socio/cambiar_clave.php", "file_type": "code", "degree": 0}, {"id": "modules_accesos_por_clave", "label": "por_clave.php", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 26.4, "font": {"size": 12, "color": "#ffffff"}, "title": "por_clave.php", "community": 4, "community_name": "por_clave.php", "source_file": "modules/accesos/por_clave.php", "file_type": "code", "degree": 6}, {"id": "modules_socio_dashboard", "label": "dashboard.php", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "dashboard.php", "community": 40, "community_name": "dashboard.php", "source_file": "modules/socio/dashboard.php", "file_type": "code", "degree": 0}, {"id": "modules_socio_mi_qr", "label": "mi_qr.php", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "mi_qr.php", "community": 41, "community_name": "mi_qr.php", "source_file": "modules/socio/mi_qr.php", "file_type": "code", "degree": 0}, {"id": "modules_socios_crear", "label": "socios/crear.php", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "socios/crear.php", "community": 42, "community_name": "socios/crear.php", "source_file": "modules/socios/crear.php", "file_type": "code", "degree": 0}, {"id": "modules_socios_editar", "label": "socios/editar.php", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "socios/editar.php", "community": 43, "community_name": "socios/editar.php", "source_file": "modules/socios/editar.php", "file_type": "code", "degree": 0}, {"id": "modules_socios_perfil", "label": "perfil.php", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "perfil.php", "community": 44, "community_name": "perfil.php", "source_file": "modules/socios/perfil.php", "file_type": "code", "degree": 0}, {"id": "modules_superadmin_crear", "label": "superadmin/crear.php", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "superadmin/crear.php", "community": 45, "community_name": "superadmin/crear.php", "source_file": "modules/superadmin/crear.php", "file_type": "code", "degree": 0}, {"id": "modules_superadmin_index", "label": "superadmin/index.php", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "superadmin/index.php", "community": 46, "community_name": "superadmin/index.php", "source_file": "modules/superadmin/index.php", "file_type": "code", "degree": 0}, {"id": "pase", "label": "pase.php", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 10.0, "font": {"size": 0, "color": "#ffffff"}, "title": "pase.php", "community": 47, "community_name": "pase.php", "source_file": "pase.php", "file_type": "code", "degree": 0}, {"id": "modules_accesos_por_dni", "label": "por_dni.php", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 29.1, "font": {"size": 12, "color": "#ffffff"}, "title": "por_dni.php", "community": 5, "community_name": "por_dni.php", "source_file": "modules/accesos/por_dni.php", "file_type": "code", "degree": 7}, {"id": "agents", "label": "AGENTS.md", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "AGENTS.md", "community": 6, "community_name": "AGENTS.md", "source_file": "AGENTS.md", "file_type": "document", "degree": 1}, {"id": "agents_graphify", "label": "graphify", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "graphify", "community": 6, "community_name": "AGENTS.md", "source_file": "AGENTS.md", "file_type": "document", "degree": 1}, {"id": "includes_sidebar", "label": "sidebar.php", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "sidebar.php", "community": 7, "community_name": "sidebar.php", "source_file": "includes/sidebar.php", "file_type": "code", "degree": 1}, {"id": "modules_pagos_index", "label": "pagos/index.php", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "pagos/index.php", "community": 8, "community_name": "pagos/index.php", "source_file": "modules/pagos/index.php", "file_type": "code", "degree": 1}, {"id": "modules_socios_index", "label": "socios/index.php", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 12.7, "font": {"size": 0, "color": "#ffffff"}, "title": "socios/index.php", "community": 9, "community_name": "socios/index.php", "source_file": "modules/socios/index.php", "file_type": "code", "degree": 1}];
+const RAW_EDGES = [{"from": "assets_js_jsqr_min_a", "to": "assets_js_jsqr_min_s", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_d", "to": "assets_js_jsqr_min_a", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_i", "to": "assets_js_jsqr_min_a", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_a", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_b", "to": "assets_js_jsqr_min_d", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_k", "to": "assets_js_jsqr_min_b", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_b", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_c", "to": "assets_js_jsqr_min_b", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_c", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_i", "to": "assets_js_jsqr_min_c", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "assets_js_jsqr_min_n", "to": "assets_js_jsqr_min_c", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "assets_js_jsqr_min_c", "to": "assets_js_jsqr_min_k", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "assets_js_jsqr_min_d", "to": "assets_js_jsqr_min_n", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_i", "to": "assets_js_jsqr_min_d", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_k", "to": "assets_js_jsqr_min_d", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_d", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_i", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_k", "to": "assets_js_jsqr_min_n", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_k", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min_l", "to": "assets_js_jsqr_min_n", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_l", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_n", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_o", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_r", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "assets_js_jsqr_min", "to": "assets_js_jsqr_min_s", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions_calcular_estado_membresia", "to": "includes_functions_dias_restantes", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_calcular_estado_membresia", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_dias_restantes", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_formatear_fecha", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_formatear_moneda", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_generar_token_qr", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_get_gimnasio_id", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_h", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_mensaje_flash", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_mostrar_flash", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_verificar_rol", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_functions", "to": "includes_functions_verificar_sesion", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_procesartoken", "to": "modules_accesos_por_qr_beeperror", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_beeperror", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_procesartoken", "to": "modules_accesos_por_qr_beepok", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_beepok", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_elegircamarafisica", "to": "modules_accesos_por_qr_esvirtual", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_iniciarcamara", "to": "modules_accesos_por_qr_elegircamarafisica", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_elegircamarafisica", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_esvirtual", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_iniciarcamara", "to": "modules_accesos_por_qr_mostrarerrorcamara", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_iniciarcamara", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_iniciarcamara", "to": "modules_accesos_por_qr_iniciarcamara_arrancarscanner", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "modules_accesos_por_qr_iniciarcamara_arrancarscanner", "to": "modules_accesos_por_qr_tick", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "modules_accesos_por_qr_procesartoken", "to": "modules_accesos_por_qr_mostrarerror", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_mostrarerror", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_mostrarerrorcamara", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_procesartoken", "to": "modules_accesos_por_qr_mostrarvencido", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_mostrarvencido", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr_tick", "to": "modules_accesos_por_qr_procesartoken", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_procesartoken", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_qr", "to": "modules_accesos_por_qr_tick", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave", "to": "modules_accesos_por_clave_beeperror", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave", "to": "modules_accesos_por_clave_beepok", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave_resetpin", "to": "modules_accesos_por_clave_updatedisplay", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave_startlockout", "to": "modules_accesos_por_clave_resetpin", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave", "to": "modules_accesos_por_clave_resetpin", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave", "to": "modules_accesos_por_clave_shakedots", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave", "to": "modules_accesos_por_clave_startlockout", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave_startlockout", "to": "modules_accesos_por_clave_startlockout_updatetimer", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_clave", "to": "modules_accesos_por_clave_updatedisplay", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_beeperror", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_beepok", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni_buscarsocio", "to": "modules_accesos_por_dni_rendersocio", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni_buscarsocio", "to": "modules_accesos_por_dni_rendernoencontrado", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_buscarsocio", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni_rendersocio", "to": "modules_accesos_por_dni_getavatarhtml", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_getavatarhtml", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni_rendersocio", "to": "modules_accesos_por_dni_getestadolabel", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_getestadolabel", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_rendernoencontrado", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_accesos_por_dni", "to": "modules_accesos_por_dni_rendersocio", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "includes_sidebar", "to": "includes_sidebar_nav_active", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_pagos_index", "to": "modules_pagos_index_closure_1", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "modules_socios_index", "to": "modules_socios_index_registrarentradamanual", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme", "to": "readme_seguridad_y_buenas_pr\u00e1cticas", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme", "to": "readme_sobre_el_proyecto", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme", "to": "readme_funcionalidades_principales", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme", "to": "readme_stack_tecnol\u00f3gico", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme", "to": "readme_estructura_del_proyecto", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme", "to": "readme_instalaci\u00f3n_y_despliegue_local", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme_funcionalidades_principales", "to": "readme_arquitectura_multi_tenant_saas", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme_funcionalidades_principales", "to": "readme_control_de_acceso_hologr\u00e1fico", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme_funcionalidades_principales", "to": "readme_gesti\u00f3n_de_membres\u00edas_y_finanzas", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "readme_funcionalidades_principales", "to": "readme_inteligencia_deportiva_rutinas", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "agents", "to": "agents_graphify", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}];
+const LEGEND = [{"cid": 0, "color": "#4E79A7", "label": "jsQR.min.js", "count": 12}, {"cid": 1, "color": "#F28E2B", "label": "functions.php", "count": 12}, {"cid": 2, "color": "#E15759", "label": "por_qr.php", "count": 12}, {"cid": 3, "color": "#76B7B2", "label": "README.md", "count": 11}, {"cid": 4, "color": "#59A14F", "label": "por_clave.php", "count": 8}, {"cid": 5, "color": "#EDC948", "label": "por_dni.php", "count": 8}, {"cid": 6, "color": "#B07AA1", "label": "AGENTS.md", "count": 2}, {"cid": 7, "color": "#FF9DA7", "label": "sidebar.php", "count": 2}, {"cid": 8, "color": "#9C755F", "label": "pagos/index.php", "count": 2}, {"cid": 9, "color": "#BAB0AC", "label": "socios/index.php", "count": 2}, {"cid": 10, "color": "#4E79A7", "label": "buscar_socio.php", "count": 1}, {"cid": 11, "color": "#F28E2B", "label": "registrar_acceso.php", "count": 1}, {"cid": 12, "color": "#E15759", "label": "validar_clave.php", "count": 1}, {"cid": 13, "color": "#76B7B2", "label": "validar_qr.php", "count": 1}, {"cid": 14, "color": "#59A14F", "label": "main.js", "count": 1}, {"cid": 15, "color": "#EDC948", "label": "db.php", "count": 1}, {"cid": 16, "color": "#B07AA1", "label": "footer.php", "count": 1}, {"cid": 17, "color": "#FF9DA7", "label": "header.php", "count": 1}, {"cid": 18, "color": "#9C755F", "label": "index.php", "count": 1}, {"cid": 19, "color": "#BAB0AC", "label": "logout.php", "count": 1}, {"cid": 20, "color": "#4E79A7", "label": "accesos/index.php", "count": 1}, {"cid": 21, "color": "#F28E2B", "label": "configuracion/index.php", "count": 1}, {"cid": 22, "color": "#E15759", "label": "dashboard/index.php", "count": 1}, {"cid": 23, "color": "#76B7B2", "label": "mi_perfil.php", "count": 1}, {"cid": 24, "color": "#59A14F", "label": "procesar_renovacion.php", "count": 1}, {"cid": 25, "color": "#EDC948", "label": "renovar.php", "count": 1}, {"cid": 26, "color": "#B07AA1", "label": "planes/crear.php", "count": 1}, {"cid": 27, "color": "#FF9DA7", "label": "planes/editar.php", "count": 1}, {"cid": 28, "color": "#9C755F", "label": "planes/index.php", "count": 1}, {"cid": 29, "color": "#BAB0AC", "label": "recepcionistas/crear.php", "count": 1}, {"cid": 30, "color": "#4E79A7", "label": "recepcionistas/editar.php", "count": 1}, {"cid": 31, "color": "#F28E2B", "label": "recepcionistas/index.php", "count": 1}, {"cid": 32, "color": "#E15759", "label": "asistencia.php", "count": 1}, {"cid": 33, "color": "#76B7B2", "label": "reportes/index.php", "count": 1}, {"cid": 34, "color": "#59A14F", "label": "ingresos.php", "count": 1}, {"cid": 35, "color": "#EDC948", "label": "socios.php", "count": 1}, {"cid": 36, "color": "#B07AA1", "label": "rutinas/editar.php", "count": 1}, {"cid": 37, "color": "#FF9DA7", "label": "imprimir.php", "count": 1}, {"cid": 38, "color": "#9C755F", "label": "rutinas/index.php", "count": 1}, {"cid": 39, "color": "#BAB0AC", "label": "cambiar_clave.php", "count": 1}, {"cid": 40, "color": "#4E79A7", "label": "dashboard.php", "count": 1}, {"cid": 41, "color": "#F28E2B", "label": "mi_qr.php", "count": 1}, {"cid": 42, "color": "#E15759", "label": "socios/crear.php", "count": 1}, {"cid": 43, "color": "#76B7B2", "label": "socios/editar.php", "count": 1}, {"cid": 44, "color": "#59A14F", "label": "perfil.php", "count": 1}, {"cid": 45, "color": "#EDC948", "label": "superadmin/crear.php", "count": 1}, {"cid": 46, "color": "#B07AA1", "label": "superadmin/index.php", "count": 1}, {"cid": 47, "color": "#FF9DA7", "label": "pase.php", "count": 1}];
+
+// HTML-escape helper — prevents XSS when injecting graph data into innerHTML
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Build vis datasets
+const nodesDS = new vis.DataSet(RAW_NODES.map((n, i) => ({
+  id: n.id, label: n.label, color: n.color, size: n.size,
+  font: n.font, title: n.title,
+  // Fermat/golden-angle spiral seed positions (#3699): spreading nodes out
+  // before physics runs keeps avoidOverlap from computing near-zero-distance
+  // repulsion that blows the BarnesHut recursion into a stack overflow on large
+  // graphs. `i` is the map index — physics still settles small graphs identically.
+  x: 30 * Math.sqrt(i) * Math.cos(i * 2.4),
+  y: 30 * Math.sqrt(i) * Math.sin(i * 2.4),
+  community: n.community, community_name: n.community_name,
+  source_file: n.source_file, file_type: n.file_type, degree: n.degree,
+  member_count: n.member_count,
+})));
+
+const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
+  id: i, from: e.from, to: e.to,
+  label: '',
+  title: e.title,
+  dashes: e.dashes,
+  width: e.width,
+  color: e.color,
+  arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+})));
+
+const container = document.getElementById('graph');
+const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
+  physics: {
+    enabled: true,
+    solver: 'forceAtlas2Based',
+    forceAtlas2Based: {
+      gravitationalConstant: -60,
+      centralGravity: 0.005,
+      springLength: 120,
+      springConstant: 0.08,
+      damping: 0.4,
+      avoidOverlap: 0.8,
+    },
+    stabilization: { iterations: 200, fit: true },
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 100,
+    hideEdgesOnDrag: true,
+    navigationButtons: false,
+    keyboard: false,
+  },
+  nodes: { shape: 'dot', borderWidth: 1.5 },
+  edges: { smooth: { type: 'continuous', roundness: 0.2 }, selectionWidth: 3 },
+});
+
+// Theme toggle (#3894): Light / Dark / System, persisted in localStorage.
+const THEME_KEY = 'graphify-theme';
+const themeMQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+let themeLabelColor = '#ffffff';  // matches the per-node font color set in Python
+function themePref() {
+  let p = null;
+  try { p = localStorage.getItem(THEME_KEY); } catch (e) {}
+  return (p === 'light' || p === 'dark' || p === 'system') ? p : null;
+}
+function applyTheme(pref) {
+  const t = pref === 'light' ? 'light' : (pref === 'system' && themeMQ && themeMQ.matches) ? 'light' : 'dark';
+  const root = document.documentElement;
+  if (!root) return;
+  root.setAttribute('data-theme', t);
+  document.querySelectorAll('[data-theme-choice]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.themeChoice === (pref || 'dark')));
+  });
+  const labelColor = getComputedStyle(root).getPropertyValue('--node-label').trim();
+  if (labelColor && labelColor !== themeLabelColor) {
+    themeLabelColor = labelColor;
+    nodesDS.update(nodesDS.get().map(n => ({ id: n.id, font: Object.assign({}, n.font, { color: labelColor }) })));
+  }
+}
+document.querySelectorAll('[data-theme-choice]').forEach(b => {
+  b.addEventListener('click', () => {
+    const pref = b.dataset.themeChoice;
+    try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+    applyTheme(pref);
+  });
+});
+if (themeMQ) {
+  const onSchemeChange = () => { if (themePref() === 'system') applyTheme('system'); };
+  if (themeMQ.addEventListener) themeMQ.addEventListener('change', onSchemeChange);
+  else if (themeMQ.addListener) themeMQ.addListener(onSchemeChange);
+}
+applyTheme(themePref());
+
+network.once('stabilizationIterationsDone', () => {
+  network.setOptions({ physics: { enabled: false } });
+});
+
+function showInfo(nodeId) {
+  const n = nodesDS.get(nodeId);
+  if (!n) return;
+  const neighborIds = network.getConnectedNodes(nodeId);
+  const neighborItems = neighborIds.map(nid => {
+    const nb = nodesDS.get(nid);
+    const color = nb ? nb.color.background : '#555';
+    return `<span class="neighbor-link" style="border-left-color:${esc(color)}" data-nid="${esc(nid)}">${esc(nb ? nb.label : nid)}</span>`;
+  }).join('');
+  const isMetaNode = !n.file_type && !n.source_file;
+  let html = `<div class="field"><b>${esc(n.label)}</b></div>`;
+  if (!isMetaNode) {
+    html += `<div class="field">Type: ${esc(n.file_type || 'unknown')}</div>`;
+  }
+  html += `<div class="field">Community: ${esc(n.community_name || '')}</div>`;
+  if (!isMetaNode) {
+    html += `<div class="field">Source: ${esc(n.source_file || '-')}</div>`;
+  } else if (n.member_count !== undefined && n.member_count !== null) {
+    html += `<div class="field">Members: ${esc(n.member_count)}</div>`;
+  }
+  html += `<div class="field">Degree: ${n.degree}</div>`;
+  if (neighborIds.length) {
+    html += `<div class="field" style="margin-top:8px;color:var(--text-2);font-size:11px">Neighbors (${neighborIds.length})</div><div id="neighbors-list">${neighborItems}</div>`;
+  }
+  document.getElementById('info-content').innerHTML = html;
+}
+
+function focusNode(nodeId) {
+  network.focus(nodeId, { scale: 1.4, animation: true });
+  network.selectNodes([nodeId]);
+  showInfo(nodeId);
+}
+
+// Neighbor links use a data attribute + one delegated listener rather than an
+// inline onclick. A node id/label sourced from a document or a scraped URL
+// (graphify add) can contain a double-quote; dropping the stringified id
+// unescaped into a quoted onclick both broke every link and allowed a hostile
+// source to inject an event handler into the local report (stored XSS, #1838).
+// esc() on data-nid keeps the value inside the attribute; the listener reads it
+// back verbatim. Bound to document so it survives the innerHTML rebuild that
+// recreates #neighbors-list on each showInfo().
+document.addEventListener('click', e => {
+  const el = e.target.closest('.neighbor-link');
+  if (el && el.dataset.nid !== undefined) focusNode(el.dataset.nid);
+});
+
+// Sidebar tooltips reuse vis-network's .vis-tooltip style and 100ms tooltipDelay.
+// Names get one only when CSS ellipsis truncates them (the full text is still in
+// the DOM); counts always get one, to say what the number is. Text is set with
+// textContent only (labels are untrusted). Delegated on document so rows rebuilt
+// later (search results, showInfo()) are covered.
+const sidebarTip = document.createElement('div');
+sidebarTip.className = 'vis-tooltip';
+sidebarTip.style.cssText = 'white-space: normal; max-width: 360px; overflow-wrap: break-word;';
+document.body.appendChild(sidebarTip);
+let sidebarTipTimer = null;
+let sidebarTipEl = null;    // element whose text the tooltip shows
+let sidebarTipZone = null;  // element the pointer must leave to hide it
+function hideSidebarTip() {
+  clearTimeout(sidebarTipTimer);
+  sidebarTip.style.visibility = 'hidden';
+  sidebarTip.textContent = '';
+  sidebarTipEl = sidebarTipZone = null;
+}
+document.addEventListener('mouseover', e => {
+  const zone = e.target.closest && e.target.closest('.legend-count, .legend-item, .search-item, .neighbor-link');
+  // Anywhere on a legend row except its count (dot, checkbox, gaps, padding)
+  // stands for the row's name, so moving within the row never re-triggers it.
+  const el = zone && zone.classList.contains('legend-item') ? zone.querySelector('.legend-label') : zone;
+  if (!el || el === sidebarTipEl) return;
+  hideSidebarTip();
+  const isCount = el.classList.contains('legend-count');
+  if (!isCount && el.scrollWidth <= el.clientWidth) return;
+  const text = isCount ? `${el.textContent} ${el.textContent === '1' ? 'node' : 'nodes'}` : el.textContent;
+  sidebarTipEl = el;
+  sidebarTipZone = zone;
+  const x = e.clientX, y = e.clientY;
+  sidebarTipTimer = setTimeout(() => {
+    sidebarTip.textContent = text;
+    sidebarTip.style.left = sidebarTip.style.top = '0px';  // measure at full max-width
+    sidebarTip.style.visibility = 'visible';
+    const w = sidebarTip.offsetWidth, h = sidebarTip.offsetHeight;
+    sidebarTip.style.left = Math.max(4, Math.min(x + 12, window.innerWidth - w - 4)) + 'px';
+    sidebarTip.style.top = (y + 16 + h > window.innerHeight ? Math.max(4, y - h - 8) : y + 16) + 'px';
+  }, 100);
+});
+document.addEventListener('mouseout', e => {
+  if (sidebarTipZone && !sidebarTipZone.contains(e.relatedTarget)) hideSidebarTip();
+});
+// A click rebuilds or hides the row (showInfo(), search pick) without a mouseout.
+document.addEventListener('mousedown', hideSidebarTip);
+
+// Track hovered node — hover detection is more reliable than click params
+let hoveredNodeId = null;
+network.on('hoverNode', params => {
+  hoveredNodeId = params.node;
+  container.style.cursor = 'pointer';
+});
+network.on('blurNode', () => {
+  hoveredNodeId = null;
+  container.style.cursor = 'default';
+});
+container.addEventListener('click', () => {
+  if (hoveredNodeId !== null) {
+    showInfo(hoveredNodeId);
+    network.selectNodes([hoveredNodeId]);
+  }
+});
+network.on('click', params => {
+  if (params.nodes.length > 0) {
+    showInfo(params.nodes[0]);
+  } else if (hoveredNodeId === null) {
+    document.getElementById('info-content').innerHTML = '<span class="empty">Click a node to inspect it</span>';
+  }
+});
+
+const searchInput = document.getElementById('search');
+const searchResults = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  searchResults.innerHTML = '';
+  if (!q) { searchResults.style.display = 'none'; return; }
+  const matches = RAW_NODES.filter(n => n.label.toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length) { searchResults.style.display = 'none'; return; }
+  searchResults.style.display = 'block';
+  matches.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'search-item';
+    el.textContent = n.label;
+    el.style.borderLeft = `3px solid ${n.color.background}`;
+    el.style.paddingLeft = '8px';
+    el.onclick = () => {
+      network.focus(n.id, { scale: 1.5, animation: true });
+      network.selectNodes([n.id]);
+      showInfo(n.id);
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    };
+    searchResults.appendChild(el);
+  });
+});
+document.addEventListener('click', e => {
+  if (!searchResults.contains(e.target) && e.target !== searchInput)
+    searchResults.style.display = 'none';
+});
+
+const hiddenCommunities = new Set();
+
+const selectAllCb = document.getElementById('select-all-cb');
+
+function updateSelectAllState() {
+  const total = LEGEND.length;
+  const hidden = hiddenCommunities.size;
+  selectAllCb.checked = hidden === 0;
+  selectAllCb.indeterminate = hidden > 0 && hidden < total;
+}
+
+function toggleAllCommunities(hide) {
+  document.querySelectorAll('.legend-item').forEach(item => {
+    hide ? item.classList.add('dimmed') : item.classList.remove('dimmed');
+  });
+  document.querySelectorAll('.legend-cb').forEach(cb => {
+    cb.checked = !hide;
+  });
+  LEGEND.forEach(c => {
+    if (hide) hiddenCommunities.add(c.cid); else hiddenCommunities.delete(c.cid);
+  });
+  const updates = RAW_NODES.map(n => ({ id: n.id, hidden: hide }));
+  nodesDS.update(updates);
+  updateSelectAllState();
+}
+
+const legendEl = document.getElementById('legend');
+LEGEND.forEach(c => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.className = 'legend-cb';
+  cb.checked = true;
+  cb.addEventListener('change', (e) => {
+    e.stopPropagation();
+    if (cb.checked) {
+      hiddenCommunities.delete(c.cid);
+      item.classList.remove('dimmed');
+    } else {
+      hiddenCommunities.add(c.cid);
+      item.classList.add('dimmed');
+    }
+    const updates = RAW_NODES
+      .filter(n => n.community === c.cid)
+      .map(n => ({ id: n.id, hidden: !cb.checked }));
+    nodesDS.update(updates);
+    updateSelectAllState();
+  });
+  item.innerHTML = `<div class="legend-dot" style="background:${c.color}"></div>
+    <span class="legend-label">${c.label}</span>
+    <span class="legend-count">${c.count}</span>`;
+  item.prepend(cb);
+  item.onclick = (e) => {
+    if (e.target === cb) return;
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event('change'));
+  };
+  legendEl.appendChild(item);
+});
+</script>
+<script>
+// Render hyperedges as shaded regions
+const hyperedges = [];
+// afterDrawing passes ctx already transformed to network coordinate space.
+// Draw node positions raw — no manual pan/zoom/DPR math needed.
+
+// Andrew's monotone chain. Returns the hull in counter-clockwise order, which
+// is what the perimeter must be traced in. Collinear and duplicate points
+// collapse to the extremes, so degenerate member sets render as a segment
+// rather than a zero-area crossed path.
+function convexHull(pts) {
+    const p = pts.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y));
+    if (p.length < 3) return p;
+    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const build = seq => {
+        const out = [];
+        for (const q of seq) {
+            while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], q) <= 0) out.pop();
+            out.push(q);
+        }
+        out.pop();
+        return out;
+    };
+    const hull = build(p).concat(build(p.slice().reverse()));
+    return hull.length >= 3 ? hull : p;
+}
+network.on('afterDrawing', function(ctx) {
+    hyperedges.forEach(h => {
+        const positions = h.nodes
+            .map(nid => network.getPositions([nid])[nid])
+            .filter(p => p !== undefined);
+        if (positions.length < 2) return;
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = '#6366f1';
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Centroid and expanded hull in network coordinates.
+        // The perimeter must follow hull order, not h.nodes order: tracing the
+        // raw member order self-intersects whenever the layout does not happen
+        // to place members in angular order, filling as crossed wedges.
+        const cx = positions.reduce((s, p) => s + p.x, 0) / positions.length;
+        const cy = positions.reduce((s, p) => s + p.y, 0) / positions.length;
+        const hull = convexHull(positions);
+        const expanded = hull.map(p => ({
+            x: cx + (p.x - cx) * 1.15,
+            y: cy + (p.y - cy) * 1.15
+        }));
+        ctx.moveTo(expanded[0].x, expanded[0].y);
+        expanded.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+        ctx.stroke();
+        // Label
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(h.label, cx, cy - 5);
+        ctx.restore();
+    });
+});
+</script>
+</body>
+</html>
