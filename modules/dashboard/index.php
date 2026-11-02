@@ -42,7 +42,8 @@ $entradas_hoy = $stmt4->fetchColumn();
 
 // 5. Últimas Entradas Registradas
 $stmt5 = $pdo->prepare("
-    SELECT a.*, s.nombre, s.apellido, s.foto 
+    SELECT a.*, s.nombre, s.apellido, s.foto,
+           GREATEST(0, TIMESTAMPDIFF(MINUTE, a.fecha_hora, NOW())) AS minutos_desde_acceso
     FROM accesos a 
     JOIN socios s ON a.socio_id = s.id 
     WHERE a.gimnasio_id = ? 
@@ -110,7 +111,12 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <?php endif; ?>
                         <div>
                             <p style="font-weight:700;font-size:0.95rem;margin-bottom:0.1rem;"><?= h($acc['nombre'] . ' ' . $acc['apellido']) ?></p>
-                            <p style="font-size:0.75rem;color:var(--color-text-muted);"><?= date('H:i A', strtotime($acc['fecha_hora'])) ?> — Hace <?= round((time() - strtotime($acc['fecha_hora'])) / 60) ?> min</p>
+                            <p style="font-size:0.75rem;color:var(--color-text-muted);">
+                                <?= date('h:i A', strtotime($acc['fecha_hora'])) ?> —
+                                <?= (int)$acc['minutos_desde_acceso'] === 0
+                                    ? 'Ahora'
+                                    : 'Hace ' . (int)$acc['minutos_desde_acceso'] . ' min' ?>
+                            </p>
                         </div>
                     </div>
                     <div>

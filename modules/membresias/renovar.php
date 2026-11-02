@@ -66,7 +66,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             Volver a Accesos
         </a>
         <h1 class="text-h2" style="margin-bottom:0.25rem;">Renovar Membresía</h1>
-        <p class="text-muted">Asigna un nuevo plan y registra el pago en un solo paso.</p>
+        <p class="text-muted">Asigna un nuevo plan y registra el pago cuando corresponda.</p>
     </div>
 
     <?php mostrar_flash(); ?>
@@ -132,12 +132,20 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </label>
                 <?php endforeach; ?>
             </div>
+
+            <label style="display:flex;align-items:flex-start;gap:0.7rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #2a2a2a;cursor:pointer;">
+                <input type="checkbox" name="integrante_adicional" value="1" style="width:1.1rem;height:1.1rem;margin-top:0.15rem;accent-color:var(--color-primary);flex-shrink:0;">
+                <span>
+                    <strong style="display:block;color:white;font-size:0.875rem;">Integrante adicional de un plan grupal</strong>
+                    <small style="display:block;color:var(--color-text-muted);margin-top:0.2rem;line-height:1.4;">Renueva la membresía sin registrar otro pago. El titular debe tener registrado el pago completo del plan.</small>
+                </span>
+            </label>
         </div>
 
         <button type="submit" id="btnRenovar" class="btn btn-primary" style="width:100%;font-size:1.05rem;min-height:54px;"
             onclick="this.disabled=true;this.innerHTML='<span style=\'display:inline-block;width:1rem;height:1rem;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;\'></span>&nbsp; Procesando...';this.form.submit();">
             <svg style="width:1.1rem;height:1.1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Procesar Renovación y Registrar Pago
+            Procesar Renovación
         </button>
     </form>
 </div>

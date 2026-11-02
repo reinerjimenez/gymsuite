@@ -75,6 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Si seleccionó un plan inicial
                 $plan_id = (int)($_POST['plan_id'] ?? 0);
                 $metodo_pago = trim($_POST['metodo_pago'] ?? 'efectivo');
+                $integrante_adicional = isset($_POST['integrante_adicional']) && $_POST['integrante_adicional'] === '1';
+                $membresia_sin_pago = false;
                 if ($plan_id) {
                     $stmtPlan = $pdo->prepare("SELECT duracion_dias, precio FROM planes WHERE id = ? AND gimnasio_id = ? AND activo = 1");
                     $stmtPlan->execute([$plan_id, $gimnasio_id]);
@@ -87,15 +89,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmtMem->execute([$socio_id, $gimnasio_id, $plan_id, $f_inicio, $f_fin]);
                         $membresia_id = $pdo->lastInsertId();
 
-                        $stmtPago = $pdo->prepare("INSERT INTO pagos (socio_id, gimnasio_id, membresia_id, monto, metodo, fecha, notas, registrado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                        $stmtPago->execute([$socio_id, $gimnasio_id, $membresia_id, $plan['precio'], $metodo_pago, $fecha_inscripcion, 'Inscripción y primer plan.', $_SESSION['usuario_id']]);
+                        // El pago completo de un plan grupal se registra solo
+                        // con el titular. Los demas integrantes reciben membresia.
+                        if (!$integrante_adicional) {
+                            $stmtPago = $pdo->prepare("INSERT INTO pagos (socio_id, gimnasio_id, membresia_id, monto, metodo, fecha, notas, registrado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmtPago->execute([$socio_id, $gimnasio_id, $membresia_id, $plan['precio'], $metodo_pago, $fecha_inscripcion, 'Inscripción y primer plan.', $_SESSION['usuario_id']]);
+                        } else {
+                            $membresia_sin_pago = true;
+                        }
                     }
                 }
                 
                 $pdo->commit();
 
                 // Mensaje SUCCESS
-                mensaje_flash('success', "¡Socio Registrado Exitosamente! El PIN de acceso ya se encuentra encriptado y seguro.");
+                mensaje_flash(
+                    'success',
+                    $membresia_sin_pago
+                        ? 'Socio registrado como integrante adicional, con membresía activa y sin duplicar el pago grupal.'
+                        : '¡Socio registrado exitosamente! El PIN de acceso se encuentra encriptado y seguro.'
+                );
                 header("Location: perfil.php?id=" . $socio_id);
                 exit;
             } catch (Exception $e) {
@@ -330,6 +343,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </select>
                 </div>
             </div>
+
+            <label style="display:flex;align-items:flex-start;gap:0.75rem;padding:1rem;border:1px solid #3f3f46;border-radius:0.6rem;background:rgba(255,255,255,0.025);cursor:pointer;margin-bottom:1.5rem;">
+                <input type="checkbox" name="integrante_adicional" value="1" style="width:1.1rem;height:1.1rem;margin-top:0.15rem;accent-color:var(--color-primary);flex-shrink:0;">
+                <span>
+                    <strong style="display:block;color:white;font-size:0.9rem;">Integrante adicional de un plan grupal</strong>
+                    <small style="display:block;color:var(--color-text-muted);margin-top:0.2rem;line-height:1.4;">Asigna la membresía, pero no registra otro pago. Márcalo solo para la segunda persona o integrantes adicionales; el pago completo debe registrarse con el titular.</small>
+                </span>
+            </label>
 
             <div class="info-banner">
                 <svg style="width: 1.5rem; height: 1.5rem; margin-top: 0.125rem; color: var(--color-primary); flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

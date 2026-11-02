@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $socio_id = (int)($_POST['socio_id'] ?? 0);
     $plan_id = (int)($_POST['plan_id'] ?? 0);
     $metodo_pago = trim($_POST['metodo_pago'] ?? 'efectivo');
+    $integrante_adicional = isset($_POST['integrante_adicional']) && $_POST['integrante_adicional'] === '1';
 
     if ($socio_id && $plan_id) {
         $pdo->beginTransaction();
@@ -37,17 +38,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtMem->execute([$socio_id, $gimnasio_id, $plan_id, $fecha_inicio, $fecha_fin]);
             $membresia_id = $pdo->lastInsertId();
 
-            // 2. Transacción de pago acoplada
-            $stmtPago = $pdo->prepare("
-                INSERT INTO pagos (socio_id, gimnasio_id, membresia_id, monto, metodo, fecha, notas, registrado_por)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmtPago->execute([
-                $socio_id, $gimnasio_id, $membresia_id, $plan['precio'], $metodo_pago, date('Y-m-d'), 'Pagado al renovar plan.', $_SESSION['usuario_id']
-            ]);
+            // En planes grupales, los integrantes adicionales renuevan su
+            // membresia sin duplicar el pago que ya registro el titular.
+            if (!$integrante_adicional) {
+                $stmtPago = $pdo->prepare("
+                    INSERT INTO pagos (socio_id, gimnasio_id, membresia_id, monto, metodo, fecha, notas, registrado_por)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $stmtPago->execute([
+                    $socio_id, $gimnasio_id, $membresia_id, $plan['precio'], $metodo_pago, date('Y-m-d'), 'Pagado al renovar plan.', $_SESSION['usuario_id']
+                ]);
+            }
 
             $pdo->commit();
-            mensaje_flash('success', 'Membresía renovada y pago registrado exitosamente.');
+            mensaje_flash(
+                'success',
+                $integrante_adicional
+                    ? 'Membresía renovada como integrante adicional, sin duplicar el pago del plan grupal.'
+                    : 'Membresía renovada y pago registrado exitosamente.'
+            );
             header("Location: ../socios/perfil.php?id=" . $socio_id);
             exit;
 

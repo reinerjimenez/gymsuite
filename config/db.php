@@ -1,6 +1,13 @@
 <?php
 // config/db.php
 
+// Toda la aplicacion y la sesion de MySQL deben usar el mismo reloj.
+// Colombia usa UTC-05:00 durante todo el ano (sin horario de verano).
+if (!defined('APP_TIMEZONE')) {
+    define('APP_TIMEZONE', 'America/Bogota');
+}
+date_default_timezone_set(APP_TIMEZONE);
+
 // ── URL Base del sistema ──────────────────────────────────────────────────────
 // Calcula automáticamente la URL base según el entorno
 if (!defined('BASE_URL')) {
@@ -31,6 +38,10 @@ try {
             PDO::ATTR_PERSISTENT => true
         )
     );
+
+    // Se ejecuta en cada solicitud, incluso si PDO reutiliza una conexion
+    // persistente, para que NOW(), CURDATE() y PHP coincidan.
+    $pdo->exec("SET time_zone = '-05:00'");
 } catch (PDOException $e) {
     die("Error de conexión a la base de datos: " . $e->getMessage());
 }

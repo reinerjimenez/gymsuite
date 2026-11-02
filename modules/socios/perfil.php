@@ -291,7 +291,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 <div id="modalRenovar" class="modal">
     <div class="modal-content">
         <h2 class="text-h2 mb-2">Renovar Membresía</h2>
-        <p class="text-muted mb-4">Elige el plan y la forma de pago para <?= h($socio['nombre']) ?>. Al guardar, se extenderá el acceso y se registrará el ingreso automáticamente.</p>
+        <p class="text-muted mb-4">Elige el plan para <?= h($socio['nombre']) ?>. El pago se registrará excepto cuando sea integrante adicional de un plan grupal.</p>
         
         <form method="POST" action="../membresias/procesar_renovacion.php">
             <input type="hidden" name="socio_id" value="<?= $socio_id ?>">
@@ -318,9 +318,17 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <option value="otro">Otro Método</option>
                 </select>
             </div>
+
+            <label style="display:flex;align-items:flex-start;gap:0.7rem;padding:0.9rem;border:1px solid #3f3f46;border-radius:0.5rem;cursor:pointer;margin-bottom:1.5rem;">
+                <input type="checkbox" name="integrante_adicional" value="1" style="width:1.1rem;height:1.1rem;margin-top:0.15rem;accent-color:var(--color-primary);flex-shrink:0;">
+                <span>
+                    <strong style="display:block;color:white;font-size:0.875rem;">Integrante adicional de un plan grupal</strong>
+                    <small style="display:block;color:var(--color-text-muted);margin-top:0.2rem;line-height:1.4;">Renueva la membresía sin duplicar el pago ya registrado con el titular.</small>
+                </span>
+            </label>
             
             <div class="flex gap-4">
-                <button type="submit" class="btn btn-primary" style="flex:1;">Procesar Pago y Renovar</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">Procesar Renovación</button>
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('modalRenovar').style.display='none'" style="flex:1;">Cancelar</button>
             </div>
         </form>
