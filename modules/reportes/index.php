@@ -26,6 +26,9 @@ include __DIR__ . '/../../includes/sidebar.php';
         </a>
 
         <!-- Reporte de Asistencia -->
+        <a href="productos.php" class="card" style="text-decoration:none;min-height:120px;"><h3 class="text-h3" style="color:white;margin-bottom:0.5rem;">Productos más vendidos</h3><p class="text-muted">Unidades e ingresos por producto durante el año.</p></a>
+
+        <!-- Reporte de Asistencia -->
         <a href="asistencia.php" class="card" style="text-decoration:none;transition:transform 0.2s, border-color 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.borderColor='var(--color-primary)'" onmouseout="this.style.transform='none';this.style.borderColor=''">
             <div style="width:3rem;height:3rem;border-radius:0.75rem;background:rgba(59,130,246,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;">
                 <svg style="width:1.5rem;height:1.5rem;color:#3b82f6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>

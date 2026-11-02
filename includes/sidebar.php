@@ -55,8 +55,14 @@ function nav_active(string $path): string {
             </li>
             <?php endif; ?>
 
-            <?php if($rol === 'admin'): ?>
+            <?php if(in_array($rol, ['admin', 'recepcionista'])): ?>
             <span class="sidebar-section-label" style="margin-top:0.5rem;">Administración</span>
+            <?php if($rol === 'admin'): ?>
+            <li><a href="<?= BASE_URL ?>modules/productos/index.php" class="nav-link<?= nav_active('productos') ?>"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8 4-8-4m16 0l-8-4-8 4m16 0v10l-8 4m-8-14v10l8 4m0-10v10"/></svg><span>Productos</span></a></li>
+            <?php endif; ?>
+            <li><a href="<?= BASE_URL ?>modules/punto_venta/index.php" class="nav-link<?= nav_active('punto_venta') ?>"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 3h2l2 12h12l2-8H6m2 12a1 1 0 100 2 1 1 0 000-2zm10 0a1 1 0 100 2 1 1 0 000-2z"/></svg><span>Punto de Venta</span></a></li>
+            <?php endif; ?>
+            <?php if($rol === 'admin'): ?>
             <li>
                 <a href="<?= BASE_URL ?>modules/planes/index.php" class="nav-link<?= nav_active('planes') ?>">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

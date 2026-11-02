@@ -18,9 +18,15 @@ $stmtM = $pdo->prepare("
 ");
 $stmtM->execute([$gimnasio_id, $anio]);
 $ingresos_mes = [];
+$ingresos_membresias_mes = [];
 while ($row = $stmtM->fetch()) {
-    $ingresos_mes[(int)$row['mes']] = (float)$row['total'];
+    $ingresos_membresias_mes[(int)$row['mes']] = (float)$row['total'];
 }
+$stmtProductos = $pdo->prepare('SELECT MONTH(fecha_hora) AS mes, SUM(total) AS total FROM ventas WHERE gimnasio_id=? AND fecha_hora>=? AND fecha_hora<? GROUP BY MONTH(fecha_hora)');
+$stmtProductos->execute([$gimnasio_id, $anio . '-01-01', ($anio + 1) . '-01-01']);
+$ingresos_productos_mes = [];
+while ($row = $stmtProductos->fetch()) $ingresos_productos_mes[(int)$row['mes']] = (float)$row['total'];
+for ($mes = 1; $mes <= 12; $mes++) $ingresos_mes[$mes] = ($ingresos_membresias_mes[$mes] ?? 0) + ($ingresos_productos_mes[$mes] ?? 0);
 
 $meses_nombres = [1=>'Enero', 2=>'Febrero', 3=>'Marzo', 4=>'Abril', 5=>'Mayo', 6=>'Junio', 7=>'Julio', 8=>'Agosto', 9=>'Septiembre', 10=>'Octubre', 11=>'Noviembre', 12=>'Diciembre'];
 $total_anual = array_sum($ingresos_mes);
@@ -34,6 +40,16 @@ $stmtMet = $pdo->prepare("
 ");
 $stmtMet->execute([$gimnasio_id, $anio]);
 $metodos = $stmtMet->fetchAll();
+$stmtMetProductos = $pdo->prepare('SELECT metodo, SUM(total) AS total, COUNT(*) AS cantidad FROM ventas WHERE gimnasio_id=? AND fecha_hora>=? AND fecha_hora<? GROUP BY metodo');
+$stmtMetProductos->execute([$gimnasio_id, $anio . '-01-01', ($anio + 1) . '-01-01']);
+$metodos_agrupados = [];
+foreach (array_merge($metodos, $stmtMetProductos->fetchAll()) as $m) {
+    $clave = $m['metodo'];
+    if (!isset($metodos_agrupados[$clave])) $metodos_agrupados[$clave] = ['metodo'=>$clave,'total'=>0,'cantidad'=>0];
+    $metodos_agrupados[$clave]['total'] += (float)$m['total'];
+    $metodos_agrupados[$clave]['cantidad'] += (int)$m['cantidad'];
+}
+$metodos = array_values($metodos_agrupados);
 
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
@@ -90,6 +106,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <?= formatear_moneda($total_anual / (date('Y') == $anio ? (int)date('n') : 12)) ?>
             </p>
         </div>
+        <div class="card" style="padding:1.5rem;"><p class="text-muted">Ingresos por membresías</p><p class="text-h3"><?= formatear_moneda(array_sum($ingresos_membresias_mes)) ?></p></div>
+        <div class="card" style="padding:1.5rem;"><p class="text-muted">Ingresos por productos</p><p class="text-h3"><?= formatear_moneda(array_sum($ingresos_productos_mes)) ?></p></div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
@@ -98,13 +116,15 @@ include __DIR__ . '/../../includes/sidebar.php';
             <h3 class="text-h3" style="margin-bottom:1rem;">Ingresos por Mes</h3>
             <div class="table-responsive">
                 <table class="table">
-                    <thead><tr><th>Mes</th><th style="text-align:right;">Monto (S/.)</th></tr></thead>
+                    <thead><tr><th>Mes</th><th style="text-align:right;">Membresías</th><th style="text-align:right;">Productos</th><th style="text-align:right;">Total (S/.)</th></tr></thead>
                     <tbody>
                         <?php foreach($meses_nombres as $num => $nombre): 
                             $monto = $ingresos_mes[$num] ?? 0;
                         ?>
                         <tr>
                             <td style="font-weight:<?= $monto > 0 ? '600' : '400' ?>;color:<?= $monto > 0 ? 'white' : 'var(--color-text-muted)' ?>;"><?= $nombre ?></td>
+                            <td style="text-align:right;"><?= number_format($ingresos_membresias_mes[$num] ?? 0, 2) ?></td>
+                            <td style="text-align:right;"><?= number_format($ingresos_productos_mes[$num] ?? 0, 2) ?></td>
                             <td style="text-align:right;font-weight:<?= $monto > 0 ? '700' : '400' ?>;color:<?= $monto > 0 ? 'var(--color-primary)' : 'var(--color-text-muted)' ?>;">
                                 <?= number_format($monto, 2) ?>
                             </td>
@@ -112,6 +132,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <?php endforeach; ?>
                         <tr style="border-top:2px solid #333;">
                             <td style="font-weight:800;">TOTAL GLOBAL</td>
+                            <td style="text-align:right;"><?= number_format(array_sum($ingresos_membresias_mes), 2) ?></td>
+                            <td style="text-align:right;"><?= number_format(array_sum($ingresos_productos_mes), 2) ?></td>
                             <td style="text-align:right;font-weight:800;color:var(--color-primary);"><?= number_format($total_anual, 2) ?></td>
                         </tr>
                     </tbody>

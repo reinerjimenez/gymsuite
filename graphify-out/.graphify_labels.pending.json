@@ -46,5 +46,9 @@
   "44": "perfil.php",
   "45": "superadmin/crear.php",
   "46": "superadmin/index.php",
-  "47": "pase.php"
+  "47": "pase.php",
+  "48": "punto_venta/index.php",
+  "49": "confirmar.php",
+  "50": "productos/index.php",
+  "51": "productos.php"
 }

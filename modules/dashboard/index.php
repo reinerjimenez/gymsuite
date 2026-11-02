@@ -22,6 +22,11 @@ $mes_actual = date('Y-m');
 $stmt1 = $pdo->prepare("SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE gimnasio_id = ? AND DATE_FORMAT(fecha, '%Y-%m') = ?");
 $stmt1->execute([$gimnasio_id, $mes_actual]);
 $ingresos_mes = $stmt1->fetchColumn();
+$ingresos_membresias = (float)$ingresos_mes;
+$stmt_productos = $pdo->prepare("SELECT COALESCE(SUM(total), 0) FROM ventas WHERE gimnasio_id = ? AND fecha_hora >= ? AND fecha_hora < ?");
+$stmt_productos->execute([$gimnasio_id, $mes_actual . '-01', date('Y-m-d', strtotime($mes_actual . '-01 +1 month'))]);
+$ingresos_productos = (float)$stmt_productos->fetchColumn();
+$ingresos_mes = $ingresos_membresias + $ingresos_productos;
 
 // 2. Socios Activos (Tienen membresía estado='activa')
 $stmt2 = $pdo->prepare("SELECT COUNT(DISTINCT socio_id) FROM membresias WHERE gimnasio_id = ? AND estado = 'activa'");
@@ -74,6 +79,8 @@ include __DIR__ . '/../../includes/sidebar.php';
         <div class="stat-card" style="border-left: 4px solid var(--color-primary);">
             <span class="stat-title">Ingresos del Mes</span>
             <span class="stat-value" style="color:var(--color-primary);"><?= formatear_moneda($ingresos_mes) ?></span>
+            <span class="stat-title">Ingresos por membresías: <?= formatear_moneda($ingresos_membresias) ?></span>
+            <span class="stat-title">Ingresos por productos: <?= formatear_moneda($ingresos_productos) ?></span>
         </div>
         <div class="stat-card">
             <span class="stat-title">Socios Activos</span>

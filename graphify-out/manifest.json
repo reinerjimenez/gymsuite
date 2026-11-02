@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "includes/sidebar.php": {
-    "mtime": 1776891550.0,
-    "seen": 1793632231.4680362,
-    "ast_hash": "34e8e3339819dadcf0a153555998aa39",
+    "mtime": 1793632887.1350539,
+    "seen": 1793632962.1904058,
+    "ast_hash": "f02abeb73e1f62e331c2531a1bcf419c",
     "semantic_hash": ""
   },
   "index.php": {
@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "modules/dashboard/index.php": {
-    "mtime": 1791303482.0,
-    "seen": 1793632231.468063,
-    "ast_hash": "9e104e83ccc944b41bdc613502b3869f",
+    "mtime": 1793632974.4413815,
+    "seen": 1793632985.6608026,
+    "ast_hash": "b689f8ec71534eed4cb3d7a72933119c",
     "semantic_hash": ""
   },
   "modules/dashboard/mi_perfil.php": {
@@ -186,15 +186,15 @@
     "semantic_hash": ""
   },
   "modules/reportes/index.php": {
-    "mtime": 1776972486.0,
-    "seen": 1793632231.468105,
-    "ast_hash": "beb7d766a0d677cc9ec48e6bc8ae5557",
+    "mtime": 1793632901.7927291,
+    "seen": 1793632962.1933367,
+    "ast_hash": "a82d836e2775bed61c8044b94cc372f2",
     "semantic_hash": ""
   },
   "modules/reportes/ingresos.php": {
-    "mtime": 1776798424.0,
-    "seen": 1793632231.4681082,
-    "ast_hash": "74c65825125e7d123e1d2dc99f7906bf",
+    "mtime": 1793632868.065787,
+    "seen": 1793632962.19334,
+    "ast_hash": "8ffd21da1d1df60ccd7b9b0d8a23487f",
     "semantic_hash": ""
   },
   "modules/reportes/socios.php": {
@@ -321,6 +321,30 @@
     "mtime": 1776905616.0,
     "seen": 1793632231.4681804,
     "ast_hash": "b1551f1a1bec9319dfba09f5a170f8c2",
+    "semantic_hash": ""
+  },
+  "modules/productos/index.php": {
+    "mtime": 1793633369.846963,
+    "seen": 1793633387.7514348,
+    "ast_hash": "2b41e942d048644f8af13d107a8b51c1",
+    "semantic_hash": ""
+  },
+  "modules/punto_venta/confirmar.php": {
+    "mtime": 1793632955.407742,
+    "seen": 1793632962.1926174,
+    "ast_hash": "16957faec5744eed016960395623eba9",
+    "semantic_hash": ""
+  },
+  "modules/punto_venta/index.php": {
+    "mtime": 1793633370.601259,
+    "seen": 1793633387.751638,
+    "ast_hash": "452c3f3efc8e5ce1058b5df9951afb90",
+    "semantic_hash": ""
+  },
+  "modules/reportes/productos.php": {
+    "mtime": 1793632901.1627028,
+    "seen": 1793632962.1933427,
+    "ast_hash": "fc70fbb4df494b333dd4eb189e4c539d",
     "semantic_hash": ""
   }
 }

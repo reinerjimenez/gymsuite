@@ -1,17 +1,17 @@
 # Graph Report - gymsuite  (2026-11-02)
 
 ## Corpus Check
-- 53 files · ~35,550 words
+- 58 files · ~38,462 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .css 2)
 
 ## Summary
-- 109 nodes · 91 edges · 48 communities (5 shown, 43 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.85)
+- 123 nodes · 104 edges · 52 communities (6 shown, 46 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `23cd3445`
+- Built from commit: `1de54d69`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,6 +23,7 @@
 - por_clave.php
 - por_dni.php
 - AGENTS.md
+- punto_venta/index.php
 
 ## God Nodes (most connected - your core abstractions)
 1. `d()` - 6 edges
@@ -42,7 +43,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (48 total, 43 thin omitted)
+## Communities (52 total, 46 thin omitted)
 
 ### Community 0 - "jsQR.min.js"
 Cohesion: 0.38
@@ -64,8 +65,12 @@ Nodes (3): resetPin(), startLockout(), updateDisplay()
 Cohesion: 0.39
 Nodes (5): buscarSocio(), getAvatarHTML(), getEstadoLabel(), renderNoEncontrado(), renderSocio()
 
+### Community 48 - "punto_venta/index.php"
+Cohesion: 0.27
+Nodes (8): carrito, catalogo, csrf, escapeHtml(), moneda(), pintar(), porId, precio()
+
 ## Knowledge Gaps
-- **43 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **46 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
