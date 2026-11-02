@@ -151,7 +151,26 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <?php endif; ?>
                 </div>
             </div>
+            <?php if ($membresia && $membresia['estado'] === 'activa' && $dias >= 0 && $tel_wa): ?>
+            <?php
+                // Reutilizar el teléfono y el enlace de WhatsApp del perfil.
+                $msg_vencimiento = "Hola {$socio['nombre']}! Te recordamos que tu membresía en {$gym_nombre} vence el "
+                    . formatear_fecha($membresia['fecha_fin']) . " ({$dias} días restantes). "
+                    . 'Te esperamos para renovar y seguir entrenando sin interrupciones.';
+                $url_vencimiento = 'https://wa.me/' . $tel_wa . '?text=' . rawurlencode($msg_vencimiento);
+            ?>
+            <a href="<?= h($url_vencimiento) ?>" target="_blank" rel="noopener noreferrer" class="btn" style="background:#22c55e;color:white;min-height:44px;text-decoration:none;">
+                Recordar vencimiento por WhatsApp
+            </a>
+            <?php endif; ?>
         </div>
+
+        <?php if (trim($socio['nota_interna'] ?? '') !== ''): ?>
+        <div class="card mb-6" style="border-left:3px solid var(--color-primary);">
+            <h3 class="text-h3 mb-2">Nota interna</h3>
+            <p class="text-muted" style="white-space:pre-wrap;"><?= h($socio['nota_interna']) ?></p>
+        </div>
+        <?php endif; ?>
 
         <!-- HISTORIAL DE PAGOS -->
         <div class="card">

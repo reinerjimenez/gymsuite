@@ -114,9 +114,9 @@
     "semantic_hash": ""
   },
   "modules/dashboard/index.php": {
-    "mtime": 1793632974.4413815,
-    "seen": 1793632985.6608026,
-    "ast_hash": "b689f8ec71534eed4cb3d7a72933119c",
+    "mtime": 1793634928.5728788,
+    "seen": 1793635021.5036657,
+    "ast_hash": "b57eb821928b5ea806ad3e2d33085eee",
     "semantic_hash": ""
   },
   "modules/dashboard/mi_perfil.php": {
@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "modules/pagos/index.php": {
-    "mtime": 1776889182.0,
-    "seen": 1793632231.4680774,
-    "ast_hash": "f8bc16bd869cfcc421b6ec6ffcf19bb4",
+    "mtime": 1793634927.848265,
+    "seen": 1793635021.504147,
+    "ast_hash": "d706f6c0077347282ebbc421427bc53f",
     "semantic_hash": ""
   },
   "modules/planes/crear.php": {
@@ -240,15 +240,15 @@
     "semantic_hash": ""
   },
   "modules/socios/crear.php": {
-    "mtime": 1791304296.0,
-    "seen": 1793632231.468135,
-    "ast_hash": "b33ef3ab726bdced98a72d5a94b72690",
+    "mtime": 1793634972.2430665,
+    "seen": 1793635021.5082424,
+    "ast_hash": "6f6fd20a4d36897ef42813e065b330c6",
     "semantic_hash": ""
   },
   "modules/socios/editar.php": {
-    "mtime": 1776889182.0,
-    "seen": 1793632231.4681385,
-    "ast_hash": "f19798185d9d8d0c092ebffc951ebc86",
+    "mtime": 1793634873.3567224,
+    "seen": 1793635021.5082457,
+    "ast_hash": "64e5a65b52227985003f8c7fd21a5f3f",
     "semantic_hash": ""
   },
   "modules/socios/index.php": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "modules/socios/perfil.php": {
-    "mtime": 1791304298.0,
-    "seen": 1793632231.4681463,
-    "ast_hash": "2a6eac8548c236615aeeea7faada05a0",
+    "mtime": 1793634945.4190826,
+    "seen": 1793635021.508432,
+    "ast_hash": "95d8f2a53acae20849033a6cfc940a5b",
     "semantic_hash": ""
   },
   "modules/superadmin/crear.php": {
@@ -345,6 +345,12 @@
     "mtime": 1793632901.1627028,
     "seen": 1793632962.1933427,
     "ast_hash": "fc70fbb4df494b333dd4eb189e4c539d",
+    "semantic_hash": ""
+  },
+  "modules/pagos/libre.php": {
+    "mtime": 1793635011.354196,
+    "seen": 1793635021.5041497,
+    "ast_hash": "daa0b6e9fce0fa5465aa133ac5680e88",
     "semantic_hash": ""
   }
 }

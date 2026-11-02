@@ -1,17 +1,17 @@
 # Graph Report - gymsuite  (2026-11-02)
 
 ## Corpus Check
-- 58 files · ~38,462 words
+- 61 files · ~39,231 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .css 2)
 
 ## Summary
-- 123 nodes · 104 edges · 52 communities (6 shown, 46 thin omitted)
+- 124 nodes · 104 edges · 53 communities (6 shown, 47 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1de54d69`
+- Built from commit: `e0f84102`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -43,7 +43,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (52 total, 46 thin omitted)
+## Communities (53 total, 47 thin omitted)
 
 ### Community 0 - "jsQR.min.js"
 Cohesion: 0.38
@@ -70,7 +70,7 @@ Cohesion: 0.27
 Nodes (8): carrito, catalogo, csrf, escapeHtml(), moneda(), pintar(), porId, precio()
 
 ## Knowledge Gaps
-- **46 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_

@@ -22,12 +22,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fecha_nacimiento = $_POST['fecha_nacimiento'] ?: null; // si vacío que sea nulo
     $fecha_inscripcion = $_POST['fecha_inscripcion'] ?: date('Y-m-d');
     $pin_manual = trim($_POST['pin'] ?? '');
+    $nota_interna = trim($_POST['nota_interna'] ?? '');
+    $plan_id = (int)($_POST['plan_id'] ?? 0);
 
     // Validación básica
     if (empty($nombre) || empty($apellido) || empty($telefono)) {
         mensaje_flash('error', 'Nombres, Apellidos y Teléfono son obligatorios.');
     } else {
         $errores = false;
+        if ($plan_id <= 0) {
+            mensaje_flash('error', 'Selecciona un plan inicial.');
+            $errores = true;
+        } else {
+            $stmtPlan = $pdo->prepare("SELECT duracion_dias, precio FROM planes WHERE id = ? AND gimnasio_id = ? AND activo = 1");
+            $stmtPlan->execute([$plan_id, $gimnasio_id]);
+            $plan = $stmtPlan->fetch();
+            if (!$plan) {
+                mensaje_flash('error', 'Selecciona un plan activo de este gimnasio.');
+                $errores = true;
+            }
+        }
         
         if ($pin_manual !== '' && !preg_match('/^[0-9]{4}$/', $pin_manual)) {
             mensaje_flash('error', 'El PIN de acceso debe ser un número de exactamente 4 dígitos.');
@@ -66,21 +80,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->beginTransaction();
             try {
                 $stmt = $pdo->prepare("
-                    INSERT INTO socios (gimnasio_id, nombre, apellido, dni, telefono, email, fecha_nacimiento, fecha_inscripcion, clave_acceso, token_qr, activo)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    INSERT INTO socios (gimnasio_id, nombre, apellido, dni, telefono, email, fecha_nacimiento, fecha_inscripcion, clave_acceso, token_qr, nota_interna, activo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 ");
-                $stmt->execute([$gimnasio_id, $nombre, $apellido, $dni, $telefono, $email, $fecha_nacimiento, $fecha_inscripcion, $clave_acceso, $token_qr]);
+                $stmt->execute([$gimnasio_id, $nombre, $apellido, $dni, $telefono, $email, $fecha_nacimiento, $fecha_inscripcion, $clave_acceso, $token_qr, $nota_interna === '' ? null : $nota_interna]);
                 $socio_id = $pdo->lastInsertId();
 
                 // Si seleccionó un plan inicial
-                $plan_id = (int)($_POST['plan_id'] ?? 0);
                 $metodo_pago = trim($_POST['metodo_pago'] ?? 'efectivo');
                 $integrante_adicional = isset($_POST['integrante_adicional']) && $_POST['integrante_adicional'] === '1';
                 $membresia_sin_pago = false;
                 if ($plan_id) {
-                    $stmtPlan = $pdo->prepare("SELECT duracion_dias, precio FROM planes WHERE id = ? AND gimnasio_id = ? AND activo = 1");
-                    $stmtPlan->execute([$plan_id, $gimnasio_id]);
-                    $plan = $stmtPlan->fetch();
                     if ($plan) {
                         $f_inicio = $fecha_inscripcion;
                         $f_fin = date('Y-m-d', strtotime($f_inicio . " +$plan[duracion_dias] days"));
@@ -321,12 +331,11 @@ include __DIR__ . '/../../includes/sidebar.php';
 
             <hr style="border-color: #262626; margin: 2.5rem 0 1.5rem 0;">
 
-            <h3 style="margin-bottom: 1.5rem; color: white; font-size: 1.25rem; font-weight: bold;">Plan Inicial (Opcional)</h3>
+            <h3 style="margin-bottom: 1.5rem; color: white; font-size: 1.25rem; font-weight: bold;">Plan Inicial *</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Asignar Plan Ahora</label>
-                    <select name="plan_id" class="form-control">
-                        <option value="">-- Registrar sin plan por ahora --</option>
+                    <select name="plan_id" class="form-control" required>
                         <?php foreach($planes as $p): ?>
                             <option value="<?= $p['id'] ?>"><?= h($p['nombre']) ?> — <?= formatear_moneda($p['precio']) ?></option>
                         <?php endforeach; ?>
@@ -360,6 +369,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
 
+            <div class="form-group"><label for="nota_interna" class="form-label">Nota interna (opcional)</label><textarea id="nota_interna" name="nota_interna" class="form-control" rows="3" placeholder="Recordatorio visible solo para el personal"><?= h($_POST['nota_interna'] ?? '') ?></textarea></div>
             <button type="submit" class="btn btn-primary w-full" style="width: 100%;">Registrar y Generar Accesos</button>
         </form>
     </div>

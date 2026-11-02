@@ -12,7 +12,7 @@ $gimnasio_id = get_gimnasio_id();
 $query = "
     SELECT p.*, s.nombre as socio_nombre, s.apellido as socio_apellido, u.usuario as registrado_por_login 
     FROM pagos p
-    JOIN socios s ON p.socio_id = s.id
+    LEFT JOIN socios s ON p.socio_id = s.id AND s.gimnasio_id = p.gimnasio_id
     LEFT JOIN usuarios u ON p.registrado_por = u.id
     WHERE p.gimnasio_id = ?
     ORDER BY p.id DESC
@@ -23,7 +23,7 @@ $stmt->execute([$gimnasio_id]);
 $pagos = $stmt->fetchAll();
 
 // Sumatoria total mensual (simplificada a todo el historial por el momento)
-$total_ingresos = array_reduce($pagos, fn($c, $i) => $c + $i['monto'], 0);
+$total_ingresos = array_reduce($pagos, function ($c, $i) { return $c + $i['monto']; }, 0);
 
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
@@ -33,8 +33,9 @@ include __DIR__ . '/../../includes/sidebar.php';
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-h2 mb-1">Registro de Ingresos</h1>
-            <p class="text-muted">Historial de pagos de todos los socios.</p>
+            <p class="text-muted">Historial de pagos y cobros libres del gimnasio.</p>
         </div>
+        <a href="libre.php" class="btn btn-primary" style="min-height:44px;">Registrar pago libre</a>
     </div>
 
     <!-- Stats -->
@@ -67,9 +68,12 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <tr>
                         <td class="text-sm font-semibold"><?= formatear_fecha($pago['fecha']) ?></td>
                         <td>
-                            <a href="../socios/perfil.php?id=<?= $pago['socio_id'] ?>" class="text-white hover:text-primary transition font-semibold">
-                                <?= h($pago['socio_nombre'] . ' ' . $pago['socio_apellido']) ?>
-                            </a>
+                            <?php if ($pago['socio_id'] && $pago['socio_nombre'] !== null): ?>
+                            <a href="../socios/perfil.php?id=<?= (int)$pago['socio_id'] ?>" class="text-white hover:text-primary transition font-semibold"><?= h($pago['socio_nombre'] . ' ' . $pago['socio_apellido']) ?></a>
+                            <?php else: ?>
+                            <span class="font-semibold">Público general</span>
+                            <?php endif; ?>
+                            <?php if (!empty($pago['concepto'])): ?><span class="text-muted text-sm" style="display:block;"><?= h($pago['concepto']) ?></span><?php endif; ?>
                         </td>
                         <td class="font-bold text-green-400"><?= formatear_moneda($pago['monto']) ?></td>
                         <td>

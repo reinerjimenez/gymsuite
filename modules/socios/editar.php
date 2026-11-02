@@ -52,16 +52,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telefono = trim($_POST['telefono'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $fecha_nacimiento = $_POST['fecha_nacimiento'] ?: null;
+    $nota_interna = trim($_POST['nota_interna'] ?? '');
 
     if (empty($nombre) || empty($apellido) || empty($telefono)) {
         mensaje_flash('error', 'Nombres, Apellidos y Teléfono son obligatorios.');
     } else {
         $stmt = $pdo->prepare("
             UPDATE socios 
-            SET nombre = ?, apellido = ?, dni = ?, telefono = ?, email = ?, fecha_nacimiento = ?
+            SET nombre = ?, apellido = ?, dni = ?, telefono = ?, email = ?, fecha_nacimiento = ?, nota_interna = ?
             WHERE id = ? AND gimnasio_id = ?
         ");
-        if ($stmt->execute([$nombre, $apellido, $dni, $telefono, $email, $fecha_nacimiento, $socio_id, $gimnasio_id])) {
+        if ($stmt->execute([$nombre, $apellido, $dni, $telefono, $email, $fecha_nacimiento, $nota_interna === '' ? null : $nota_interna, $socio_id, $gimnasio_id])) {
             mensaje_flash('success', 'Datos actualizados exitosamente.');
             header("Location: perfil.php?id=" . $socio_id);
             exit;
@@ -122,6 +123,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
 
+            <div class="form-group"><label for="nota_interna" class="form-label">Nota interna (opcional)</label><textarea id="nota_interna" name="nota_interna" class="form-control" rows="3"><?= h($socio['nota_interna'] ?? '') ?></textarea></div>
             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
         </form>
     </div>
