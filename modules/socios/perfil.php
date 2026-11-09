@@ -151,16 +151,23 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <?php endif; ?>
                 </div>
             </div>
-            <?php if ($membresia && $membresia['estado'] === 'activa' && $dias >= 0 && $tel_wa): ?>
+            <?php if ($membresia && $tel_wa): ?>
             <?php
                 // Reutilizar el teléfono y el enlace de WhatsApp del perfil.
-                $msg_vencimiento = "Hola {$socio['nombre']}! Te recordamos que tu membresía en {$gym_nombre} vence el "
-                    . formatear_fecha($membresia['fecha_fin']) . " ({$dias} días restantes). "
-                    . 'Te esperamos para renovar y seguir entrenando sin interrupciones.';
+                if ($estado_texto === 'vencida') {
+                    $dias_vencida = abs($dias);
+                    $msg_vencimiento = "Hola {$socio['nombre']}! Tu membresía en {$gym_nombre} venció el "
+                        . formatear_fecha($membresia['fecha_fin']) . " (hace {$dias_vencida} días). "
+                        . 'Te esperamos para renovarla y retomar tus entrenamientos.';
+                } else {
+                    $msg_vencimiento = "Hola {$socio['nombre']}! Te recordamos que tu membresía en {$gym_nombre} vence el "
+                        . formatear_fecha($membresia['fecha_fin']) . " ({$dias} días restantes). "
+                        . 'Te esperamos para renovar y seguir entrenando sin interrupciones.';
+                }
                 $url_vencimiento = 'https://wa.me/' . $tel_wa . '?text=' . rawurlencode($msg_vencimiento);
             ?>
             <a href="<?= h($url_vencimiento) ?>" target="_blank" rel="noopener noreferrer" class="btn" style="background:#22c55e;color:white;min-height:44px;text-decoration:none;">
-                Recordar vencimiento por WhatsApp
+                <?= $estado_texto === 'vencida' ? 'Recordar renovación por WhatsApp' : 'Recordar vencimiento por WhatsApp' ?>
             </a>
             <?php endif; ?>
         </div>
