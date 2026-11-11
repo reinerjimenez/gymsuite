@@ -11,7 +11,7 @@ $socio_id = (int)($_GET['id'] ?? 0);
 
 if (!$socio_id) { header("Location: index.php"); exit; }
 
-$stmt = $pdo->prepare("SELECT * FROM socios WHERE id = ? AND gimnasio_id = ?");
+$stmt = $pdo->prepare("SELECT * FROM socios WHERE id = ? AND gimnasio_id = ? AND eliminado_en IS NULL");
 $stmt->execute([$socio_id, $gimnasio_id]);
 $socio = $stmt->fetch();
 
@@ -19,6 +19,7 @@ if (!$socio) {
     mensaje_flash('error', 'Socio no encontrado.');
     header("Location: index.php"); exit;
 }
+if (!isset($_SESSION['socio_estado_csrf'])) $_SESSION['socio_estado_csrf'] = bin2hex(random_bytes(32));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'reset_pin') {
@@ -38,9 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Si viene action de baja lógica (SOLO ADMIN)
     if (isset($_POST['action']) && $_POST['action'] === 'baja_logica') {
         verificar_rol(['admin']); // extra validacion de seguridad profunda
+        if (!is_string($_POST['csrf'] ?? null) || !hash_equals($_SESSION['socio_estado_csrf'], $_POST['csrf'])) {
+            mensaje_flash('error', 'Formulario vencido. Recarga el perfil e inténtalo de nuevo.');
+            header("Location: perfil.php?id=" . $socio_id);
+            exit;
+        }
         $nuevo_estado = (int)$socio['activo'] === 1 ? 0 : 1;
-        $stmt = $pdo->prepare("UPDATE socios SET activo = ? WHERE id = ?");
-        $stmt->execute([$nuevo_estado, $socio_id]);
+        $stmt = $pdo->prepare("UPDATE socios SET activo = ? WHERE id = ? AND gimnasio_id = ? AND eliminado_en IS NULL");
+        $stmt->execute([$nuevo_estado, $socio_id, $gimnasio_id]);
         mensaje_flash('success', $nuevo_estado === 1 ? 'El socio ha sido rehabilitado.' : 'El socio ha sido bloqueado (Baja).');
         header("Location: perfil.php?id=" . $socio_id);
         exit;
@@ -151,6 +157,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         </p>
         <form method="POST" action="">
             <input type="hidden" name="action" value="baja_logica">
+            <input type="hidden" name="csrf" value="<?= h($_SESSION['socio_estado_csrf']) ?>">
             <?php if((int)$socio['activo'] === 1): ?>
                 <button type="submit" class="btn btn-danger require-confirm" data-confirm="¿Bloquear a <?= h($socio['nombre']) ?>? Perderá acceso por completo.">
                     Dar de Baja (Bloquear)

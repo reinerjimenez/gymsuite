@@ -10,7 +10,7 @@ $gimnasio_id = get_gimnasio_id();
 
 // Filtros básicos por GET
 $search = trim($_GET['q'] ?? '');
-$filter_estado = $_GET['estado'] ?? 'todos'; // todos, activos, inactivos
+$filter_estado = $_GET['estado'] ?? 'activos'; // todos, activos, inactivos
 
 $query = "
     SELECT s.*, max_m.fecha_fin_membresia
@@ -21,7 +21,7 @@ $query = "
         WHERE gimnasio_id = ?
         GROUP BY socio_id
     ) max_m ON max_m.socio_id = s.id
-    WHERE s.gimnasio_id = ?
+    WHERE s.gimnasio_id = ? AND s.eliminado_en IS NULL
 ";
 $params = [$gimnasio_id, $gimnasio_id];
 
@@ -73,7 +73,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </select>
             </div>
             <button type="submit" class="btn btn-secondary">Filtrar</button>
-            <?php if($search || $filter_estado !== 'todos'): ?>
+            <?php if($search || isset($_GET['estado'])): ?>
                 <a href="index.php" class="btn btn-secondary text-red-400">Limpiar</a>
             <?php endif; ?>
         </form>
@@ -89,7 +89,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <th>Socio</th>
                         <th>Contacto</th>
                         <th>Membresía</th>
-                        <th>Acceso</th>
+                        <th>Notas</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -139,10 +139,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <div class="text-xs mt-1 text-gray-400"><?= $estado_texto ?></div>
                         </td>
                         <td>
-                            <?php if($estado_socio): ?>
-                                <span class="badge badge-success">PERMITIDO</span>
+                            <?php if (trim($socio['nota_interna'] ?? '') !== ''): ?>
+                                <span title="<?= h($socio['nota_interna']) ?>" style="display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= h($socio['nota_interna']) ?></span>
                             <?php else: ?>
-                                <span class="badge badge-danger">BLOQUEADO</span>
+                                <span style="color:var(--color-text-muted)">—</span>
                             <?php endif; ?>
                         </td>
                         <td>

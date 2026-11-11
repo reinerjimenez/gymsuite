@@ -12,13 +12,20 @@ $socio_id = (int)($_GET['id'] ?? 0);
 if (!$socio_id) { header("Location: index.php"); exit; }
 
 // Obtener datos del socio
-$stmt = $pdo->prepare("SELECT * FROM socios WHERE id = ? AND gimnasio_id = ?");
+$stmt = $pdo->prepare("SELECT * FROM socios WHERE id = ? AND gimnasio_id = ? AND eliminado_en IS NULL");
 $stmt->execute([$socio_id, $gimnasio_id]);
 $socio = $stmt->fetch();
 
 if (!$socio) {
     mensaje_flash('error', 'Socio no encontrado.');
     header("Location: index.php"); exit;
+}
+
+if ($_SESSION['rol'] === 'admin' && (int)$socio['activo'] !== 1 && $socio['eliminado_en'] === null && !isset($_SESSION['eliminar_socio_csrf'])) {
+    $_SESSION['eliminar_socio_csrf'] = bin2hex(random_bytes(32));
+}
+if ($_SESSION['rol'] === 'admin' && (int)$socio['activo'] !== 1 && !isset($_SESSION['socio_estado_csrf'])) {
+    $_SESSION['socio_estado_csrf'] = bin2hex(random_bytes(32));
 }
 
 // Obtener membresía activa (la última)
@@ -102,6 +109,21 @@ include __DIR__ . '/../../includes/sidebar.php';
         </div>
         
         <?php mostrar_flash(); ?>
+
+        <?php if ($_SESSION['rol'] === 'admin' && (int)$socio['activo'] !== 1 && $socio['eliminado_en'] === null): ?>
+        <div class="mb-6" style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <form method="post" action="editar.php?id=<?= (int)$socio_id ?>" onsubmit="return confirm('¿Habilitar nuevamente a este socio?');">
+                <input type="hidden" name="action" value="baja_logica">
+                <input type="hidden" name="csrf" value="<?= h($_SESSION['socio_estado_csrf']) ?>">
+                <button type="submit" class="btn btn-primary" style="min-height:44px;">Habilitar Socio</button>
+            </form>
+            <form method="post" action="eliminar.php" onsubmit="return confirm('Esta acción no se puede deshacer. Se perderán los datos personales del socio; su historial de pagos se conservará como Socio eliminado por motivos contables. ¿Deseas continuar?');">
+                <input type="hidden" name="csrf" value="<?= h($_SESSION['eliminar_socio_csrf']) ?>">
+                <input type="hidden" name="socio_id" value="<?= (int)$socio_id ?>">
+                <button type="submit" class="btn btn-danger" style="min-height:44px;">Eliminar socio definitivamente</button>
+            </form>
+        </div>
+        <?php endif; ?>
 
         <div class="card mb-6">
             <?php

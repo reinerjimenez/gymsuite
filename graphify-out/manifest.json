@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "modules/reportes/index.php": {
-    "mtime": 1793632901.7927291,
-    "seen": 1793632962.1933367,
-    "ast_hash": "a82d836e2775bed61c8044b94cc372f2",
+    "mtime": 1793715928.2918732,
+    "seen": 1794409403.082599,
+    "ast_hash": "cecb492c158a0d230fa9b52c06118db3",
     "semantic_hash": ""
   },
   "modules/reportes/ingresos.php": {
@@ -246,21 +246,21 @@
     "semantic_hash": ""
   },
   "modules/socios/editar.php": {
-    "mtime": 1793634873.3567224,
-    "seen": 1793635021.5082457,
-    "ast_hash": "64e5a65b52227985003f8c7fd21a5f3f",
+    "mtime": 1794410049.3052683,
+    "seen": 1794410068.5674791,
+    "ast_hash": "1418f56f6e6b796cef2349ec1a780277",
     "semantic_hash": ""
   },
   "modules/socios/index.php": {
-    "mtime": 1776903716.0,
-    "seen": 1793632231.4681418,
-    "ast_hash": "403c85da731202bcffa17785907c8ab3",
+    "mtime": 1794409331.2420888,
+    "seen": 1794409403.0865474,
+    "ast_hash": "8a1d02c6b0b7dc6b9cef7e7303726c78",
     "semantic_hash": ""
   },
   "modules/socios/perfil.php": {
-    "mtime": 1793634945.4190826,
-    "seen": 1793635021.508432,
-    "ast_hash": "95d8f2a53acae20849033a6cfc940a5b",
+    "mtime": 1794410222.5853636,
+    "seen": 1794410229.566772,
+    "ast_hash": "149abff20dda85fa48f0fc0809667561",
     "semantic_hash": ""
   },
   "modules/superadmin/crear.php": {
@@ -351,6 +351,12 @@
     "mtime": 1793635011.354196,
     "seen": 1793635021.5041497,
     "ast_hash": "daa0b6e9fce0fa5465aa133ac5680e88",
+    "semantic_hash": ""
+  },
+  "modules/socios/eliminar.php": {
+    "mtime": 1794409435.2078745,
+    "seen": 1794409442.0525773,
+    "ast_hash": "91ed10f27068631809285419771af641",
     "semantic_hash": ""
   }
 }
